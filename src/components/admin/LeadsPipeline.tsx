@@ -23,7 +23,8 @@ interface Contact {
   maxBudget?: string;
   typology?: string;
   notes?: string;
-  classifications?: string[]; // Comprador, Vendedor, Inquilino, Arrendatário
+  classifications?: string[];
+  origin?: string;
   // Projecto de controlo
   projectId?: string;
   unitId?: string;
@@ -41,6 +42,7 @@ interface Activity {
 }
 
 const CHANNELS = ['Telefone', 'Email', 'WhatsApp', 'Mensagem'] as const;
+const ORIGINS = ['Grupos WhatsApp', 'Idealista Habta', 'Idealista Portela', 'Landing Velask', 'Site Habta'] as const;
 
 interface ControloProjectOption {
   id: string;
@@ -93,6 +95,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     typology: string;
     notes: string;
     classifications: string[];
+    origin: string;
     projectId: string;
     unitId: string;
     proposalValue: string;
@@ -106,6 +109,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     typology: '',
     notes: '',
     classifications: [],
+    origin: '',
     projectId: '',
     unitId: '',
     proposalValue: '',
@@ -132,6 +136,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     interest: '',
     message: '',
     projectId: '',
+    origin: '',
   });
 
   // Fetch controlo projects on mount
@@ -382,6 +387,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               typology: c.typology || '',
               notes: c.notes || '',
               classifications: c.classifications || [],
+              origin: c.origin || '',
               projectId: c.projectId || '',
               unitId: c.unitId || '',
               proposalValue: c.proposalValue ? String(c.proposalValue) : '',
@@ -417,6 +423,13 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
         <MessageSquare size={11} aria-hidden="true" />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{c.interest}</span>
       </div>
+
+      {/* Origem */}
+      {c.origin && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 8px', background: designSystem.helpers.hexToRgba(colors.info, 0.08), color: colors.info, borderRadius: radius.md, fontSize: '10px', fontWeight: typography.fontWeight.bold, alignSelf: 'flex-start' }}>
+          {c.origin}
+        </div>
+      )}
 
       {/* Preferências compactas */}
       {(c.desiredLocations?.length || c.maxBudget || c.typology) && (
@@ -468,6 +481,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
           interest: newLead.interest.trim() || 'Lead manual',
           message: newLead.message.trim() || 'Criado manualmente no admin',
           projectId: newLead.projectId,
+          origin: newLead.origin,
         }),
       });
       const data = await response.json();
@@ -476,7 +490,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       }
       toast.success('Lead criado com sucesso');
       setIsCreating(false);
-      setNewLead({ name: '', email: '', phone: '', interest: '', message: '', projectId: '' });
+      setNewLead({ name: '', email: '', phone: '', interest: '', message: '', projectId: '', origin: '' });
       onRefresh?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao criar lead');
@@ -775,6 +789,22 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
 
               <div>
                 <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Origem
+                </label>
+                <select
+                  value={form.origin}
+                  onChange={(e) => setForm({ ...form, origin: e.target.value })}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                >
+                  <option value="">— Selecionar —</option>
+                  {ORIGINS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                   Localizações desejadas
                 </label>
                 <input
@@ -1046,6 +1076,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                         typology: form.typology.trim(),
                         notes: form.notes.trim(),
                         classifications: form.classifications,
+                        origin: form.origin,
                         projectId: form.projectId,
                         unitId: form.unitId,
                         proposalValue: form.proposalValue ? Number(form.proposalValue) : 0,
@@ -1215,20 +1246,37 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
-                Projeto (Controlo)
-              </label>
-              <select
-                value={newLead.projectId}
-                onChange={(e) => setNewLead({ ...newLead, projectId: e.target.value })}
-                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
-              >
-                <option value="">— Nenhum —</option>
-                {controloProjects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Origem
+                </label>
+                <select
+                  value={newLead.origin}
+                  onChange={(e) => setNewLead({ ...newLead, origin: e.target.value })}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                >
+                  <option value="">— Selecionar —</option>
+                  {ORIGINS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Projeto (Controlo)
+                </label>
+                <select
+                  value={newLead.projectId}
+                  onChange={(e) => setNewLead({ ...newLead, projectId: e.target.value })}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                >
+                  <option value="">— Nenhum —</option>
+                  {controloProjects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>

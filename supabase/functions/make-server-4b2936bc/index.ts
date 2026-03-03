@@ -28,7 +28,7 @@ app.get("/make-server-4b2936bc/health", (c) => {
 app.post("/make-server-4b2936bc/contact", async (c) => {
   try {
     const body = await c.req.json();
-    const { name, email, phone, interest, message, projectId } = body;
+    const { name, email, phone, interest, message, projectId, origin } = body;
 
     // Validation
     if (!name || !email || !phone || !interest || !message) {
@@ -54,6 +54,7 @@ app.post("/make-server-4b2936bc/contact", async (c) => {
       interest,
       message,
       projectId: projectId || '',
+      origin: origin || '',
       createdAt: new Date().toISOString(),
       timestamp,
     };
@@ -176,6 +177,7 @@ app.put("/make-server-4b2936bc/contacts/:id", async (c) => {
       unitId,
       proposalValue,
       classifications,
+      origin,
     } = body || {};
 
     const updated = {
@@ -203,6 +205,7 @@ app.put("/make-server-4b2936bc/contacts/:id", async (c) => {
       classifications: Array.isArray(classifications)
         ? classifications
         : (existing as any).classifications || [],
+      origin: origin !== undefined ? origin : (existing as any).origin || '',
       updatedAt: new Date().toISOString(),
     };
 
