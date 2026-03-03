@@ -497,6 +497,27 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
         </div>
       )}
 
+      {/* Badges de classificação */}
+      {c.classifications && c.classifications.length > 0 && (
+        <div style={{ marginTop: spacing[2], display: 'flex', gap: spacing[1], flexWrap: 'wrap' }}>
+          {c.classifications.map((cls) => (
+            <span
+              key={`${c.id}-cls-${cls}`}
+              style={{
+                padding: `${spacing[1]} ${spacing[2]}`,
+                background: designSystem.helpers.hexToRgba(colors.warning, 0.12),
+                color: colors.warning,
+                borderRadius: radius.full,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.bold,
+              }}
+            >
+              {cls}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div style={{ marginTop: spacing[2], display: 'flex', alignItems: 'center', gap: spacing[1], color: colors.gray[500], fontSize: typography.fontSize.xs }}>
         <Calendar size={12} aria-hidden="true" />
         {new Date(c.createdAt).toLocaleDateString('pt-PT')}
