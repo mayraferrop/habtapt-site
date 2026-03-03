@@ -566,7 +566,6 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       {/* Modal de edição de preferências */}
       {isEditing && editingContact && (
         <div
-          onClick={() => setIsEditing(false)}
           style={{
             position: 'fixed',
             inset: 0,
@@ -981,7 +980,6 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     {/* Modal de criação de lead */}
     {isCreating && (
       <div
-        onClick={() => setIsCreating(false)}
         style={{
           position: 'fixed',
           inset: 0,

@@ -868,7 +868,6 @@ function ContactDetailModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
