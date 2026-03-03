@@ -27,6 +27,8 @@ import {
   UserPlus,
   TrendingDown,
   BarChart3,
+  Save,
+  Edit,
 } from './icons';
 import { toast } from 'sonner';
 import { supabaseFetch } from '../utils/supabase/client';
@@ -761,7 +763,7 @@ export function AdminPanel() {
           ) : (
             <AnimatePresence mode="wait">
               {activeTab === 'contacts' ? (
-                <ContactsView contacts={filteredContacts} viewMode={viewMode} selectedContact={selectedContact} onSelectContact={setSelectedContact} />
+                <ContactsView contacts={filteredContacts} viewMode={viewMode} selectedContact={selectedContact} onSelectContact={setSelectedContact} onRefresh={fetchContacts} />
               ) : activeTab === 'leads' ? (
                 <LeadsPipeline contacts={contacts} onRefresh={fetchContacts} />
               ) : activeTab === 'subscribers' ? (
@@ -791,10 +793,76 @@ export function AdminPanel() {
 function ContactDetailModal({
   contact,
   onClose,
+  onRefresh,
 }: {
   contact: Contact;
   onClose: () => void;
+  onRefresh?: () => void;
 }) {
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: contact.name || '',
+    email: contact.email || '',
+    phone: contact.phone || '',
+    interest: contact.interest || '',
+    notes: contact.notes || '',
+    desiredLocations: (contact.desiredLocations || []).join(', '),
+    maxBudget: contact.maxBudget || '',
+    typology: contact.typology || '',
+  });
+
+  const normalizeId = (id: string) => (id.startsWith('contact:') ? id.slice('contact:'.length) : id);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        interest: form.interest.trim(),
+        notes: form.notes.trim(),
+        desiredLocations: form.desiredLocations.split(',').map(s => s.trim()).filter(Boolean),
+        maxBudget: form.maxBudget.trim(),
+        typology: form.typology.trim(),
+      };
+      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || `Erro HTTP ${response.status}`);
+      }
+      toast.success('Contacto atualizado');
+      setIsEditMode(false);
+      onRefresh?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: spacing[3],
+    border: `1px solid ${colors.gray[300]}`,
+    borderRadius: radius.md,
+    fontSize: typography.fontSize.sm,
+    outline: 'none',
+    fontFamily: 'inherit',
+  };
+
+  const labelStyle = {
+    display: 'block' as const,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.gray[500],
+    marginBottom: '4px',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -853,87 +921,231 @@ function ContactDetailModal({
             </div>
             <div>
               <h3 style={{ fontWeight: typography.fontWeight.bold, fontSize: typography.fontSize.lg, color: colors.gray[900] }}>
-                {contact.name}
+                {isEditMode ? 'Editar Contacto' : contact.name}
               </h3>
-              <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[500] }}>{contact.createdAt}</p>
+              <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[500] }}>
+                {new Date(contact.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Fechar detalhes do contato"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              borderRadius: radius.md,
-              border: 'none',
-              background: colors.gray[100],
-              color: colors.gray[600],
-              cursor: 'pointer',
-            }}
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: 'flex', gap: spacing[2] }}>
+            {!isEditMode && (
+              <button
+                onClick={() => setIsEditMode(true)}
+                aria-label="Editar contacto"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: radius.md,
+                  border: 'none',
+                  background: designSystem.helpers.hexToRgba(colors.primary, 0.1),
+                  color: colors.primary,
+                  cursor: 'pointer',
+                }}
+              >
+                <Edit size={16} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              aria-label="Fechar"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                borderRadius: radius.md,
+                border: 'none',
+                background: colors.gray[100],
+                color: colors.gray[600],
+                cursor: 'pointer',
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div style={{ padding: `${spacing[5]} ${spacing[6]}`, display: 'flex', flexDirection: 'column', gap: spacing[4] }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-            <Mail size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
-            <div>
-              <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Email</p>
-              <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[900], fontWeight: typography.fontWeight.medium }}>{contact.email}</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-            <Phone size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
-            <div>
-              <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Telefone</p>
-              <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[900], fontWeight: typography.fontWeight.medium }}>{contact.phone}</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-            <MessageSquare size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
-            <div>
-              <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Interesse</p>
-              <span
-                style={{
-                  display: 'inline-block',
-                  padding: `${spacing[1]} ${spacing[3]}`,
-                  background: designSystem.helpers.hexToRgba(colors.secondary, 0.1),
-                  color: colors.secondary,
-                  borderRadius: radius.md,
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.semibold,
-                }}
-              >
-                {contact.interest}
-              </span>
-            </div>
-          </div>
-
-          {contact.message && (
-            <div>
-              <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[2] }}>Mensagem</p>
-              <div
-                style={{
-                  padding: spacing[4],
-                  background: colors.gray[50],
-                  borderRadius: radius.lg,
-                  border: `1px solid ${colors.gray[200]}`,
-                  fontSize: typography.fontSize.sm,
-                  color: colors.gray[700],
-                  lineHeight: typography.lineHeight.relaxed,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {contact.message}
+          {isEditMode ? (
+            <>
+              <div>
+                <label style={labelStyle}>Nome</label>
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
               </div>
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+                <div>
+                  <label style={labelStyle}>Email</label>
+                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Telefone</label>
+                  <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Interesse</label>
+                <input type="text" value={form.interest} onChange={(e) => setForm({ ...form, interest: e.target.value })} style={inputStyle} />
+              </div>
+
+              {contact.message && (
+                <div>
+                  <label style={labelStyle}>Mensagem original</label>
+                  <div style={{ padding: spacing[3], background: colors.gray[50], borderRadius: radius.md, border: `1px solid ${colors.gray[200]}`, fontSize: typography.fontSize.sm, color: colors.gray[600], maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: typography.lineHeight.relaxed }}>
+                    {contact.message}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: spacing[3] }}>
+                <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: spacing[3] }}>
+                  Preferências
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Localizações desejadas</label>
+                <input type="text" value={form.desiredLocations} onChange={(e) => setForm({ ...form, desiredLocations: e.target.value })} placeholder="Ex: Lisboa, Cascais, Porto" style={inputStyle} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+                <div>
+                  <label style={labelStyle}>Valor máximo</label>
+                  <input type="text" value={form.maxBudget} onChange={(e) => setForm({ ...form, maxBudget: e.target.value })} placeholder="Ex: €500.000" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Tipologia</label>
+                  <input type="text" value={form.typology} onChange={(e) => setForm({ ...form, typology: e.target.value })} placeholder="Ex: T1, T2, T3" style={inputStyle} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Observações</label>
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notas sobre o contacto" rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing[2], marginTop: spacing[2] }}>
+                <button
+                  onClick={() => setIsEditMode(false)}
+                  style={{ padding: `${spacing[2]} ${spacing[4]}`, border: `1px solid ${colors.gray[300]}`, background: colors.white, color: colors.gray[700], borderRadius: radius.md, cursor: 'pointer', fontSize: typography.fontSize.sm }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: spacing[1],
+                    padding: `${spacing[2]} ${spacing[4]}`,
+                    border: 'none',
+                    background: colors.primary,
+                    color: colors.white,
+                    borderRadius: radius.md,
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    fontWeight: typography.fontWeight.semibold,
+                    fontSize: typography.fontSize.sm,
+                    opacity: isSaving ? 0.6 : 1,
+                  }}
+                >
+                  <Save size={16} />
+                  {isSaving ? 'A salvar...' : 'Salvar'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+                <Mail size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Email</p>
+                  <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[900], fontWeight: typography.fontWeight.medium }}>{contact.email}</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+                <Phone size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Telefone</p>
+                  <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[900], fontWeight: typography.fontWeight.medium }}>{contact.phone}</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+                <MessageSquare size={16} style={{ color: colors.gray[400], flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: '2px' }}>Interesse</p>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: `${spacing[1]} ${spacing[3]}`,
+                      background: designSystem.helpers.hexToRgba(colors.secondary, 0.1),
+                      color: colors.secondary,
+                      borderRadius: radius.md,
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.semibold,
+                    }}
+                  >
+                    {contact.interest}
+                  </span>
+                </div>
+              </div>
+
+              {contact.message && (
+                <div>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[2] }}>Mensagem</p>
+                  <div
+                    style={{
+                      padding: spacing[4],
+                      background: colors.gray[50],
+                      borderRadius: radius.lg,
+                      border: `1px solid ${colors.gray[200]}`,
+                      fontSize: typography.fontSize.sm,
+                      color: colors.gray[700],
+                      lineHeight: typography.lineHeight.relaxed,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {contact.message}
+                  </div>
+                </div>
+              )}
+
+              {/* Preferências (se existirem) */}
+              {(contact.desiredLocations?.length || contact.maxBudget || contact.typology || contact.notes) && (
+                <div style={{ borderTop: `1px solid ${colors.gray[200]}`, paddingTop: spacing[3] }}>
+                  <p style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: spacing[3] }}>
+                    Preferências
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
+                    {contact.typology && (
+                      <span style={{ padding: `${spacing[1]} ${spacing[2]}`, background: designSystem.helpers.hexToRgba(colors.primary, 0.08), color: colors.primary, borderRadius: radius.full, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold }}>
+                        {contact.typology}
+                      </span>
+                    )}
+                    {contact.maxBudget && (
+                      <span style={{ padding: `${spacing[1]} ${spacing[2]}`, background: designSystem.helpers.hexToRgba(colors.success, 0.08), color: colors.success, borderRadius: radius.full, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold }}>
+                        Máx: {contact.maxBudget}
+                      </span>
+                    )}
+                    {(contact.desiredLocations || []).map((loc, i) => (
+                      <span key={i} style={{ padding: `${spacing[1]} ${spacing[2]}`, background: colors.gray[100], color: colors.gray[700], borderRadius: radius.full, fontSize: typography.fontSize.xs }}>
+                        {loc}
+                      </span>
+                    ))}
+                  </div>
+                  {contact.notes && (
+                    <p style={{ marginTop: spacing[2], fontSize: typography.fontSize.sm, color: colors.gray[600], lineHeight: typography.lineHeight.relaxed }}>
+                      {contact.notes}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </motion.div>
@@ -947,11 +1159,13 @@ function ContactsView({
   viewMode,
   selectedContact,
   onSelectContact,
+  onRefresh,
 }: {
   contacts: Contact[];
   viewMode: 'grid' | 'list';
   selectedContact: Contact | null;
   onSelectContact: (contact: Contact | null) => void;
+  onRefresh?: () => void;
 }) {
   if (contacts.length === 0) {
     return (
@@ -977,7 +1191,7 @@ function ContactsView({
     <>
       <AnimatePresence>
         {selectedContact && (
-          <ContactDetailModal contact={selectedContact} onClose={() => onSelectContact(null)} />
+          <ContactDetailModal contact={selectedContact} onClose={() => onSelectContact(null)} onRefresh={onRefresh} />
         )}
       </AnimatePresence>
 
