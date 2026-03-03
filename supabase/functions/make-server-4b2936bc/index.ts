@@ -160,6 +160,10 @@ app.put("/make-server-4b2936bc/contacts/:id", async (c) => {
     const body = await c.req.json();
     // Campos permitidos para atualização
     const {
+      name,
+      email,
+      phone,
+      interest,
       pipelineStage,
       notes,
       owner,
@@ -176,6 +180,11 @@ app.put("/make-server-4b2936bc/contacts/:id", async (c) => {
 
     const updated = {
       ...(existing as any),
+      // Dados do contacto
+      name: name !== undefined ? name : (existing as any).name || '',
+      email: email !== undefined ? email : (existing as any).email || '',
+      phone: phone !== undefined ? phone : (existing as any).phone || '',
+      interest: interest !== undefined ? interest : (existing as any).interest || '',
       pipelineStage: pipelineStage || (existing as any).pipelineStage || 'novo',
       notes: notes !== undefined ? notes : (existing as any).notes || '',
       owner: owner !== undefined ? owner : (existing as any).owner || '',

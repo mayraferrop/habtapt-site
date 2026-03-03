@@ -72,6 +72,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [form, setForm] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    interest: string;
     desiredLocations: string;
     maxBudget: string;
     typology: string;
@@ -81,6 +85,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     unitId: string;
     proposalValue: string;
   }>({
+    name: '',
+    email: '',
+    phone: '',
+    interest: '',
     desiredLocations: '',
     maxBudget: '',
     typology: '',
@@ -294,6 +302,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 e.stopPropagation();
                 setEditingContact(c);
                 setForm({
+                  name: c.name || '',
+                  email: c.email || '',
+                  phone: c.phone || '',
+                  interest: c.interest || '',
                   desiredLocations: (c.desiredLocations || []).join(', '),
                   maxBudget: c.maxBudget || '',
                   typology: c.typology || '',
@@ -585,7 +597,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   color: colors.gray[900],
                 }}
               >
-                Preferências do Lead
+                Editar Lead
               </h3>
               <button
                 onClick={() => setIsEditing(false)}
@@ -604,103 +616,66 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3], maxHeight: '70vh', overflowY: 'auto', paddingRight: spacing[1] }}>
+              {/* --- Dados do contacto --- */}
+              <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Dados do contacto
+              </div>
               <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: typography.fontSize.sm,
-                    fontWeight: typography.fontWeight.medium,
-                    color: colors.gray[700],
-                    marginBottom: spacing[1],
-                  }}
-                >
-                  Localizações desejadas
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Nome
                 </label>
                 <input
                   type="text"
-                  value={form.desiredLocations}
-                  onChange={(e) => setForm({ ...form, desiredLocations: e.target.value })}
-                  placeholder="Ex: Lisboa, Cascais, Porto"
-                  style={{
-                    width: '100%',
-                    padding: spacing[3],
-                    border: `1px solid ${colors.gray[300]}`,
-                    borderRadius: radius.md,
-                    fontSize: typography.fontSize.base,
-                    outline: 'none',
-                  }}
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Nome completo"
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
-                    Valor máximo
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                    Email
                   </label>
                   <input
-                    type="text"
-                    value={form.maxBudget}
-                    onChange={(e) => setForm({ ...form, maxBudget: e.target.value })}
-                    placeholder="Ex: €500.000"
-                    style={{
-                      width: '100%',
-                      padding: spacing[3],
-                      border: `1px solid ${colors.gray[300]}`,
-                      borderRadius: radius.md,
-                      fontSize: typography.fontSize.base,
-                      outline: 'none',
-                    }}
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="email@exemplo.com"
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
                   />
                 </div>
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
-                    Tipologia
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                    Telefone
                   </label>
                   <input
-                    type="text"
-                    value={form.typology}
-                    onChange={(e) => setForm({ ...form, typology: e.target.value })}
-                    placeholder="Ex: T1, T2, T3"
-                    style={{
-                      width: '100%',
-                      padding: spacing[3],
-                      border: `1px solid ${colors.gray[300]}`,
-                      borderRadius: radius.md,
-                      fontSize: typography.fontSize.base,
-                      outline: 'none',
-                    }}
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="+351 000 000 000"
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
                   />
                 </div>
               </div>
-              
-              {/* Mensagem original do lead */}
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Interesse
+                </label>
+                <input
+                  type="text"
+                  value={form.interest}
+                  onChange={(e) => setForm({ ...form, interest: e.target.value })}
+                  placeholder="Ex: Velask Residence, Investimento..."
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                />
+              </div>
+
+              {/* Mensagem original do lead (somente leitura) */}
               {editingContact.message && (
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                     Mensagem original
                   </label>
                   <div
@@ -712,7 +687,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       fontSize: typography.fontSize.sm,
                       color: colors.gray[600],
                       background: colors.gray[50],
-                      maxHeight: '120px',
+                      maxHeight: '100px',
                       overflowY: 'auto',
                       lineHeight: typography.lineHeight.relaxed,
                     }}
@@ -721,19 +696,18 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   </div>
                 </div>
               )}
-              
+
+              {/* --- Separador --- */}
+              <div style={{ borderTop: `1px solid ${colors.gray[200]}`, marginTop: spacing[1], paddingTop: spacing[3] }}>
+                <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Preferências e classificação
+                </div>
+              </div>
+
               {/* Classificações do lead */}
               <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: typography.fontSize.sm,
-                    fontWeight: typography.fontWeight.medium,
-                    color: colors.gray[700],
-                    marginBottom: spacing[2],
-                  }}
-                >
-                  Classificação do Lead
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[2] }}>
+                  Classificação
                 </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
                   {['Comprador', 'Vendedor', 'Inquilino', 'Arrendatário'].map((classification) => (
@@ -771,33 +745,63 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   ))}
                 </div>
               </div>
-              
+
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Localizações desejadas
+                </label>
+                <input
+                  type="text"
+                  value={form.desiredLocations}
+                  onChange={(e) => setForm({ ...form, desiredLocations: e.target.value })}
+                  placeholder="Ex: Lisboa, Cascais, Porto"
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                    Valor máximo
+                  </label>
+                  <input
+                    type="text"
+                    value={form.maxBudget}
+                    onChange={(e) => setForm({ ...form, maxBudget: e.target.value })}
+                    placeholder="Ex: €500.000"
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                    Tipologia
+                  </label>
+                  <input
+                    type="text"
+                    value={form.typology}
+                    onChange={(e) => setForm({ ...form, typology: e.target.value })}
+                    placeholder="Ex: T1, T2, T3"
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              {/* --- Separador --- */}
+              <div style={{ borderTop: `1px solid ${colors.gray[200]}`, marginTop: spacing[1], paddingTop: spacing[3] }}>
+                <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Projeto e pipeline
+                </div>
+              </div>
+
               {/* Projecto de controlo */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                     Projeto (Controlo)
                   </label>
                   <select
                     value={form.projectId}
                     onChange={(e) => setForm({ ...form, projectId: e.target.value, unitId: '' })}
-                    style={{
-                      width: '100%',
-                      padding: spacing[3],
-                      border: `1px solid ${colors.gray[300]}`,
-                      borderRadius: radius.md,
-                      fontSize: typography.fontSize.base,
-                      outline: 'none',
-                      background: colors.white,
-                    }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
                   >
                     <option value="">— Nenhum —</option>
                     {controloProjects.map((p) => (
@@ -806,15 +810,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   </select>
                 </div>
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                     Unidade
                   </label>
                   <select
@@ -845,15 +841,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 localStages[editingContact.id] || editingContact.pipelineStage || 'novo'
               ) && (
                 <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: typography.fontWeight.medium,
-                      color: colors.gray[700],
-                      marginBottom: spacing[1],
-                    }}
-                  >
+                  <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                     Valor da proposta (€)
                   </label>
                   <input
@@ -861,45 +849,21 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     value={form.proposalValue}
                     onChange={(e) => setForm({ ...form, proposalValue: e.target.value })}
                     placeholder="Ex: 350000"
-                    style={{
-                      width: '100%',
-                      padding: spacing[3],
-                      border: `1px solid ${colors.gray[300]}`,
-                      borderRadius: radius.md,
-                      fontSize: typography.fontSize.base,
-                      outline: 'none',
-                    }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
                   />
                 </div>
               )}
 
               <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: typography.fontSize.sm,
-                    fontWeight: typography.fontWeight.medium,
-                    color: colors.gray[700],
-                    marginBottom: spacing[1],
-                  }}
-                >
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                   Observações
                 </label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   placeholder="Observações importantes sobre o perfil do lead"
-                  rows={4}
-                  style={{
-                    width: '100%',
-                    padding: spacing[3],
-                    border: `1px solid ${colors.gray[300]}`,
-                    borderRadius: radius.md,
-                    fontSize: typography.fontSize.base,
-                    outline: 'none',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                  }}
+                  rows={3}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
 
@@ -925,6 +889,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     setIsSaving(true);
                     try {
                       const payload = {
+                        name: form.name.trim(),
+                        email: form.email.trim(),
+                        phone: form.phone.trim(),
+                        interest: form.interest.trim(),
                         desiredLocations: form.desiredLocations
                           .split(',')
                           .map((s) => s.trim())
@@ -946,10 +914,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                         data = await response.json();
                       } catch {}
                       if (!response.ok) {
-                        throw new Error(data?.error || `Falha ao salvar preferências (HTTP ${response.status})`);
+                        throw new Error(data?.error || `Falha ao salvar (HTTP ${response.status})`);
                       }
-                      toast.success('Preferências salvas');
-                      // persistir localmente também
+                      toast.success('Lead atualizado');
                       try {
                         const next = { ...localPrefs, [editingContact.id]: payload };
                         setLocalPrefs(next);
@@ -958,9 +925,12 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       setIsEditing(false);
                       onRefresh?.();
                     } catch (err) {
-                      // Salvar localmente mesmo em erro para não perder dados
                       try {
                         const payloadLocal = {
+                          name: form.name.trim(),
+                          email: form.email.trim(),
+                          phone: form.phone.trim(),
+                          interest: form.interest.trim(),
                           desiredLocations: form.desiredLocations
                             .split(',')
                             .map((s) => s.trim())
@@ -976,10 +946,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                         const next = { ...localPrefs, [editingContact!.id]: payloadLocal };
                         setLocalPrefs(next);
                         localStorage.setItem('habta_lead_prefs', JSON.stringify(next));
-                        toast.warning('Preferências salvas localmente. Sincronização pendente.');
+                        toast.warning('Salvo localmente. Sincronização pendente.');
                         setIsEditing(false);
                       } catch {
-                        toast.error(err instanceof Error ? err.message : 'Erro ao salvar preferências');
+                        toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
                       }
                     } finally {
                       setIsSaving(false);
