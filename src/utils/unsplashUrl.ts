@@ -17,12 +17,14 @@ function setParam(url: string, key: string, value: string): string {
 export function unsplashUrl(
   src: string,
   width: number,
-  { format = 'avif', quality = 55 }: { format?: string; quality?: number } = {},
+  { format = 'avif', quality = 55, height }: { format?: string; quality?: number; height?: number } = {},
 ): string {
   let url = src;
   url = setParam(url, 'fm', format);
   url = setParam(url, 'q', String(quality));
   url = setParam(url, 'w', String(width));
+  if (height) url = setParam(url, 'h', String(height));
+  url = setParam(url, 'fit', 'crop');
   return url;
 }
 
