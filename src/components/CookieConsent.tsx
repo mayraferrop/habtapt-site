@@ -27,6 +27,8 @@ export function CookieConsent() {
 
   const handleAccept = () => {
     try {
+      // Intentionally stored in localStorage (not a cookie) — persists indefinitely
+      // until the user clears browser data. The cookies policy page reflects this.
       localStorage.setItem(COOKIE_KEY, JSON.stringify({ accepted: true, date: new Date().toISOString() }));
     } catch {}
     setVisible(false);
@@ -34,6 +36,7 @@ export function CookieConsent() {
 
   const handleReject = () => {
     try {
+      // Intentionally stored in localStorage (not a cookie) — see comment above.
       localStorage.setItem(COOKIE_KEY, JSON.stringify({ accepted: false, date: new Date().toISOString() }));
     } catch {}
     setVisible(false);

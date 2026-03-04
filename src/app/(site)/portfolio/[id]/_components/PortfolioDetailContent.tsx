@@ -120,11 +120,11 @@ export default function PortfolioDetailContent() {
         <Container>
           <Button
             variant="ghost"
-            onClick={() => router.push('/portfolio')}
+            onClick={() => router.back()}
             style={{ marginBottom: designSystem.spacing[6] }}
           >
             <ArrowLeft size={20} />
-            Voltar ao Portfólio
+            Voltar
           </Button>
         </Container>
       </Section>

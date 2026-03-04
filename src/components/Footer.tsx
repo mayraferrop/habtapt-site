@@ -11,12 +11,12 @@ const links = {
     { label: 'Home', href: '/' },
     { label: 'Serviços', href: '/servicos' },
     { label: 'Processo', href: '/processo' },
-    { label: 'Projetos', href: '/portfolio' },
+    { label: 'Imóveis', href: '/portfolio' },
     { label: 'Contacto', href: '/contacto' },
   ],
   recursos: [
     { label: 'Insights', href: '/blog' },
-    { label: 'Depoimentos', href: '/#depoimentos' },
+    { label: 'Depoimentos', href: '/depoimentos' },
   ],
   legal: [
     { label: 'Política de Privacidade', href: '/privacidade' },

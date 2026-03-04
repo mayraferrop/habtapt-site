@@ -553,6 +553,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     // Otimismo local
     setLocalStages((prev) => ({ ...prev, [id]: stageId }));
 
+    // Abrir modal imediatamente (antes do await, senão onRefresh pode desmontar o componente)
+    setStageChangeComment('');
+    setStageChangeInfo({ contactId: id, contactName, fromLabel, toLabel });
+
     try {
       setIsSaving(true);
       const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(id))}`, {
@@ -586,10 +590,6 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     } finally {
       setIsSaving(false);
     }
-
-    // Abrir modal para comentário (após atualização otimista)
-    setStageChangeComment('');
-    setStageChangeInfo({ contactId: id, contactName, fromLabel, toLabel });
   };
 
   const handleStageChangeConfirm = async (withComment: boolean) => {

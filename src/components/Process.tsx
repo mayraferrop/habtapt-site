@@ -353,7 +353,7 @@ export function Process() {
                   marginBottom: designSystem.spacing[2],
                 }}
               >
-                3-6
+                3-12
               </div>
               <div
                 style={{

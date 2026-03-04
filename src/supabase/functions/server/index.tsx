@@ -122,7 +122,7 @@ app.post("/make-server-4b2936bc/newsletter", async (c) => {
 
     return c.json({ 
       success: true, 
-      message: "Subscrição confirmada! Verifique seu email.",
+      message: "Subscrição confirmada! Verifique o seu email.",
       id: subscriberId 
     });
   } catch (error) {

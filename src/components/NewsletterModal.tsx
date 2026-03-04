@@ -71,7 +71,7 @@ export function NewsletterModal({ isOpen, onClose }: NewsletterModalProps) {
       }
 
       setIsSuccess(true);
-      toast.success(data.message || 'Subscrição confirmada! Verifique seu email.');
+      toast.success(data.message || 'Subscrição confirmada! Verifique o seu email.');
       
       // Fechar modal após 2 segundos
       setTimeout(() => {
@@ -79,7 +79,7 @@ export function NewsletterModal({ isOpen, onClose }: NewsletterModalProps) {
       }, 2000);
     } catch (error) {
       console.error('Newsletter subscription network error (modal):', error);
-      toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+      toast.error('Erro de conexão. Verifique a sua internet e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -328,7 +328,7 @@ export function NewsletterModal({ isOpen, onClose }: NewsletterModalProps) {
                           name="modal-newsletter-email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="Digite seu melhor email"
+                          placeholder="Insira o seu melhor email"
                           disabled={isSubmitting}
                           autoFocus
                           aria-required="true"

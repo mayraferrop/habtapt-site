@@ -65,7 +65,7 @@ export function Login() {
   return (
     <AuthCard
       title="HABTA"
-      subtitle="Faça login para acessar o painel administrativo"
+      subtitle="Faça login para aceder ao painel administrativo"
       backRoute="home"
     >
       {/* Logo & Icon Header */}
@@ -112,7 +112,7 @@ export function Login() {
           label="Email"
           type="email"
           icon={Mail}
-          placeholder="Digite seu email"
+          placeholder="Insira o seu email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -125,7 +125,7 @@ export function Login() {
           label="Senha"
           type="password"
           icon={Lock}
-          placeholder="Digite sua senha"
+          placeholder="Insira a sua senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}

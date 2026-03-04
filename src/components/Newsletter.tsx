@@ -46,7 +46,7 @@ export function Newsletter({ variant = 'card', theme = 'light' }: NewsletterProp
       }
 
       setIsSuccess(true);
-      toast.success(data.message || 'Subscrição confirmada! Verifique seu email.');
+      toast.success(data.message || 'Subscrição confirmada! Verifique o seu email.');
       
       // Reset após 3 segundos
       setTimeout(() => {
@@ -55,7 +55,7 @@ export function Newsletter({ variant = 'card', theme = 'light' }: NewsletterProp
       }, 3000);
     } catch (error) {
       console.error('Newsletter subscription network error:', error);
-      toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+      toast.error('Erro de conexão. Verifique a sua internet e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

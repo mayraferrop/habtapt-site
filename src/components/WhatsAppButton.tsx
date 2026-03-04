@@ -121,7 +121,7 @@ export function WhatsAppButton() {
                       lineHeight: '1.3',
                     }}
                   >
-                    Prefere email? <span style={{ fontWeight: 600 }}>contacto@habta.eu</span>
+                    Prefere email? <span style={{ fontWeight: 600 }}>contato@habta.eu</span>
                   </div>
                 </motion.div>
               )}

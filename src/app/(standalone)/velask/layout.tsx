@@ -97,7 +97,7 @@ const breadcrumbJsonLd = {
   '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Início', item: 'https://habta.eu' },
-    { '@type': 'ListItem', position: 2, name: 'Imóveis', item: 'https://habta.eu/imoveis' },
+    { '@type': 'ListItem', position: 2, name: 'Imóveis', item: 'https://habta.eu/portfolio' },
     { '@type': 'ListItem', position: 3, name: 'Velask', item: 'https://habta.eu/velask' },
   ],
 };

@@ -84,7 +84,7 @@ export function Hero() {
                   textTransform: 'uppercase',
                 }}
               >
-                Disponivel Agora
+                Disponível Agora
               </span>
             </div>
 
@@ -195,7 +195,7 @@ export function Hero() {
                 </span>
               </Link>
 
-              <Link href="/imoveis" style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
+              <Link href="/portfolio" style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
                 <span
                   className="inline-flex items-center justify-center rounded-full backdrop-blur-md w-full sm:w-auto hover-lift"
                   style={{
@@ -214,7 +214,7 @@ export function Hero() {
                     display: 'inline-flex',
                   }}
                 >
-                  Todos os Imoveis
+                  Todos os Imóveis
                 </span>
               </Link>
             </div>

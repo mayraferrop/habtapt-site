@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import PortfolioDetailContent from './_components/PortfolioDetailContent';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 export const runtime = 'edge';
 
-const SUPABASE_URL = 'https://xrgcrvhmzoxfduhytzhk.supabase.co';
+const SUPABASE_URL = `https://${projectId}.supabase.co`;
 const FUNCTION_PATH = 'functions/v1/make-server-4b2936bc';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyZ2Nydmhtem94ZmR1aHl0emhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxNzQ5MDEsImV4cCI6MjA3Nzc1MDkwMX0.kuOHXFvX3s5yTDmxA4KBw_r6NDZxmsQtZRm_WDkdGUE';
 
 async function fetchProject(id: string) {
   try {
     const res = await fetch(`${SUPABASE_URL}/${FUNCTION_PATH}/projects/${id}`, {
-      headers: { 'Authorization': `Bearer ${ANON_KEY}` },
+      headers: { 'Authorization': `Bearer ${publicAnonKey}` },
       next: { revalidate: 3600 },
     });
     if (!res.ok) return null;

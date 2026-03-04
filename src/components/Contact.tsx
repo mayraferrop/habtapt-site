@@ -117,7 +117,7 @@ export function Contact() {
       });
     } catch (error) {
       console.error('Contact form network error:', error);
-      toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+      toast.error('Erro de conexão. Verifique a sua internet e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +156,7 @@ export function Contact() {
       icon: MapPin,
       label: 'Localização',
       value: 'Lisboa / Cascais',
-      href: 'https://maps.google.com',
+      href: 'https://maps.google.com/?q=Rua+Fernão+Lopes+23,+Cascais,+Portugal',
     },
     {
       icon: Clock,
@@ -301,7 +301,7 @@ export function Contact() {
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,
                   }}
-                  placeholder="Seu nome"
+                  placeholder="O seu nome"
                 />
                 {formErrors.name && (
                   <p
@@ -501,7 +501,7 @@ export function Contact() {
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,
                   }}
-                  placeholder="Conte-nos mais sobre seu interesse..."
+                  placeholder="Conte-nos mais sobre o seu interesse..."
                 />
                 {formErrors.message && (
                   <p
@@ -561,7 +561,7 @@ export function Contact() {
                   color: designSystem.colors.neutral[600],
                 }}
               >
-                Responderemos em até 24 horas úteis
+                Respondemos em até 24 horas úteis
               </p>
             </form>
           </motion.div>

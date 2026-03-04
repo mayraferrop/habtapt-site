@@ -11,9 +11,8 @@ import { designSystem } from './design-system';
 const navItems = [
   { label: 'Início', href: '/' },
   { label: 'Serviços', href: '/servicos' },
-  { label: 'Imóveis', href: '/imoveis' },
   { label: 'VELASK', href: '/velask' },
-  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Imóveis', href: '/portfolio' },
   { label: 'Insights', href: '/blog' },
   { label: 'Contacto', href: '/contacto' },
 ];
@@ -107,7 +106,7 @@ export function Header() {
           <Link
             href="/"
             className="flex items-center gap-3"
-            aria-label="Ir para pagina inicial"
+            aria-label="Ir para página inicial"
             style={{ textDecoration: 'none' }}
           >
             <div className="flex items-center gap-3 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]">
@@ -128,7 +127,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1" aria-label="Navegacao principal">
+          <nav className="hidden lg:flex items-center gap-1" aria-label="Navegação principal">
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (

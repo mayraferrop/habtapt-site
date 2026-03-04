@@ -70,7 +70,7 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
     {
       id: 'velask',
       title: 'VELASK Residence',
-      location: 'Antas, Porto',
+      location: 'Campanhã, Porto',
       status: 'available',
       statusLabel: 'Disponível',
       strategy: 'fix-flip',
@@ -82,15 +82,15 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
       price: 'Sob consulta',
       investment: 'Sob consulta',
       timeline: 'Entrega 2026',
-      description: 'Três apartamentos a estrear nas Antas (Porto), com jardins privados, garagem e duplex com piso superior.',
-      highlights: 'Jardins privados até 27,80 m²\nExterior total até 34,06 m²\nGaragem privativa (R/C)\nPiso superior 33,11 m² (Duplex)\nApenas 3 unidades\nLocalização premium nas Antas',
+      description: 'Três apartamentos a estrear em Campanhã (Porto), com jardins privados, garagem e duplex com piso superior.',
+      highlights: 'Jardins privados até 27,80 m²\nExterior total até 34,06 m²\nGaragem privativa (R/C)\nPiso superior 33,11 m² (Duplex)\nApenas 3 unidades\nLocalização premium em Campanhã',
       landingPage: '/velask',
       estimatedRent: '€1.200/mês',
       grossYield: '5.2%',
       netYield: '4.1%',
       appreciationEstimate: '+15% em 3 anos',
       propertyType: 'ambos',
-      neighborhood: 'Antas é um dos bairros mais valorizados do Porto, junto ao Estádio do Dragão e com excelentes acessos.',
+      neighborhood: 'Campanhã é uma das zonas com maior valorização do Porto, junto ao Estádio do Dragão e com excelentes acessos.',
       finishes: ['Cozinha equipada', 'AC pré-instalado', 'Vidros duplos', 'Jardim privado', 'Garagem'],
       nearbyAmenities: ['Metro 5 min', 'Estádio do Dragão 2 min', 'Shopping Alameda 8 min', 'Hospital S. João 10 min'],
       lifestyle: 'Vida urbana com espaço exterior privado, ideal para famílias ou profissionais que valorizam conforto e localização premium.',
@@ -452,7 +452,7 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
               style={{ marginTop: designSystem.spacing[10] }}
             >
               <Link
-                href="/imoveis"
+                href="/portfolio"
                 className="inline-flex items-center rounded-full transition-all"
                 style={{
                   gap: designSystem.spacing[2],
