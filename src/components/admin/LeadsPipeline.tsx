@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { Mail, Phone, Calendar, MessageSquare, Edit, Save, X, Plus, Trash2, Clock, CheckCircle, AlertCircle } from '../icons';
@@ -199,6 +199,55 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
   // Stage change modal state
   const [stageChangeInfo, setStageChangeInfo] = useState<{ contactId: string; contactName: string; fromLabel: string; toLabel: string } | null>(null);
   const [stageChangeComment, setStageChangeComment] = useState('');
+
+  // Drag-and-drop UX: auto-scroll + drop target highlight
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<number | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<PipelineStageId | null>(null);
+
+  const handleDragOverContainer = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const edgeZone = 80;
+    const scrollSpeed = 12;
+
+    if (autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+
+    const doScroll = () => {
+      if (!scrollContainerRef.current) return;
+      if (e.clientX < rect.left + edgeZone) {
+        scrollContainerRef.current.scrollLeft -= scrollSpeed;
+        autoScrollRef.current = requestAnimationFrame(doScroll);
+      } else if (e.clientX > rect.right - edgeZone) {
+        scrollContainerRef.current.scrollLeft += scrollSpeed;
+        autoScrollRef.current = requestAnimationFrame(doScroll);
+      }
+    };
+
+    if (e.clientX < rect.left + edgeZone || e.clientX > rect.right - edgeZone) {
+      doScroll();
+    }
+  }, []);
+
+  const handleDragLeaveContainer = useCallback(() => {
+    if (autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }, []);
+
+  // Cleanup auto-scroll on drag end
+  useEffect(() => {
+    if (!draggingId && autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }, [draggingId]);
 
   // Fetch all pending follow-ups for card badges
   const fetchAllPendingFollowups = React.useCallback(async () => {
@@ -589,8 +638,16 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     <div
       key={c.id}
       draggable
-      onDragStart={() => setDraggingId(c.id)}
-      onDragEnd={() => setDraggingId(null)}
+      onDragStart={(e) => {
+        setDraggingId(c.id);
+        e.dataTransfer.effectAllowed = 'move';
+        // Set minimal drag image data for browser compatibility
+        e.dataTransfer.setData('text/plain', c.id);
+      }}
+      onDragEnd={() => {
+        setDraggingId(null);
+        setDragOverStage(null);
+      }}
       onMouseEnter={(e) => {
         if (draggingId !== c.id) {
           e.currentTarget.style.boxShadow = shadows.md;
@@ -821,7 +878,19 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       </button>
     </div>
 
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(260px, 1fr))', gap: spacing[4], overflowX: 'auto' }}>
+    <div
+      ref={scrollContainerRef}
+      onDragOver={handleDragOverContainer}
+      onDragLeave={handleDragLeaveContainer}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(8, minmax(260px, 1fr))',
+        gap: spacing[4],
+        overflowX: 'auto',
+        paddingBottom: spacing[2],
+        scrollBehavior: 'auto',
+      }}
+    >
       {STAGES.map((stage) => {
         const items = columns[stage.id];
         return (
@@ -860,18 +929,39 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
             </div>
 
             <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDropOn(stage.id)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (draggingId) setDragOverStage(stage.id);
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                if (draggingId) setDragOverStage(stage.id);
+              }}
+              onDragLeave={(e) => {
+                // Only clear if leaving the drop zone itself (not entering a child)
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragOverStage((prev) => prev === stage.id ? null : prev);
+                }
+              }}
+              onDrop={() => {
+                setDragOverStage(null);
+                handleDropOn(stage.id);
+              }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: spacing[2],
                 padding: spacing[2],
-                background: colors.gray[50],
+                background: draggingId && dragOverStage === stage.id
+                  ? designSystem.helpers.hexToRgba(stage.color, 0.08)
+                  : colors.gray[50],
                 borderRadius: radius.md,
                 minHeight: 160,
-                border: `1px dashed ${designSystem.helpers.hexToRgba(stage.color, 0.35)}`,
-                transition: 'background 0.2s',
+                border: draggingId && dragOverStage === stage.id
+                  ? `2px dashed ${stage.color}`
+                  : `1px dashed ${designSystem.helpers.hexToRgba(stage.color, 0.35)}`,
+                transition: 'background 0.2s, border 0.2s',
               }}
             >
               {items.length === 0 ? (
