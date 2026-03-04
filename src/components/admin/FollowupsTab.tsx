@@ -172,8 +172,16 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
     }
   };
 
+  const priorityBadgeStyles: Record<string, { bg: string; color: string }> = {
+    low: { bg: colors.gray[100], color: colors.gray[600] },
+    medium: { bg: '#FEF3C7', color: '#92400E' },
+    high: { bg: '#FFEDD5', color: '#9A3412' },
+    urgent: { bg: '#FEE2E2', color: '#991B1B' },
+  };
+
   const renderSection = (title: string, items: Followup[], borderColor: string, bgColor: string) => {
     if (items.length === 0) return null;
+    const isOverdueSection = borderColor === colors.error;
     return (
       <div style={{ marginBottom: spacing[6] }}>
         <div style={{
@@ -218,14 +226,18 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
             return (
               <div
                 key={fu.id}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = shadows.md; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = colors.gray[300]; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = designSystem.helpers.hexToRgba(borderColor, 0.3); }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   gap: spacing[1],
                   padding: spacing[3],
                   border: `1px solid ${designSystem.helpers.hexToRgba(borderColor, 0.3)}`,
+                  borderLeft: isOverdueSection ? `3px solid ${colors.error}` : `1px solid ${designSystem.helpers.hexToRgba(borderColor, 0.3)}`,
                   borderRadius: radius.md,
                   background: bgColor,
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {/* Header row */}
@@ -265,8 +277,10 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
                     <button
                       type="button"
                       onClick={() => handleDelete(fu)}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = designSystem.helpers.hexToRgba(colors.error, 0.1); e.currentTarget.style.color = colors.error; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = colors.gray[400]; }}
                       aria-label="Eliminar follow-up"
-                      style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '2px' }}
+                      style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '4px', borderRadius: radius.sm, transition: 'all 0.2s ease' }}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -287,8 +301,8 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
                   </span>
                   <span style={{
                     padding: '1px 6px',
-                    background: designSystem.helpers.hexToRgba(priorityInfo?.color || '#6B7280', 0.1),
-                    color: priorityInfo?.color || '#6B7280',
+                    background: priorityBadgeStyles[fu.priority]?.bg || colors.gray[100],
+                    color: priorityBadgeStyles[fu.priority]?.color || colors.gray[600],
                     borderRadius: radius.full,
                     fontSize: '10px',
                     fontWeight: typography.fontWeight.bold,
@@ -330,6 +344,8 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
                     <textarea
                       value={completionText}
                       onChange={(e) => setCompletionText(e.target.value)}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                       placeholder="Descreva o resultado..."
                       rows={2}
                       style={{
@@ -341,6 +357,7 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
                         outline: 'none',
                         resize: 'vertical',
                         fontFamily: 'inherit',
+                        transition: 'all 0.2s ease',
                       }}
                       autoFocus
                     />
@@ -389,12 +406,12 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
 
   if (followups.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: spacing[12], color: colors.gray[500] }}>
-        <CheckCircle size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.3 }} />
-        <h3 style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, marginBottom: spacing[2] }}>
+      <div style={{ textAlign: 'center', padding: `${spacing[16]} ${spacing[8]}`, color: colors.gray[400] }}>
+        <CheckCircle size={48} style={{ marginBottom: spacing[4], opacity: 0.4 }} />
+        <p style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[2] }}>
           Tudo em dia
-        </h3>
-        <p style={{ fontSize: typography.fontSize.sm }}>Não existem follow-ups pendentes</p>
+        </p>
+        <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400] }}>Nao existem follow-ups pendentes</p>
       </div>
     );
   }

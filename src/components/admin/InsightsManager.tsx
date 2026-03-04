@@ -503,7 +503,17 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                 border: `1px solid ${colors.neutral[200]}`,
                 boxShadow: shadows.sm,
                 overflow: 'hidden',
-                transition: 'all 0.3s',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = shadows.md;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = colors.neutral[300];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = shadows.sm;
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.borderColor = colors.neutral[200];
               }}
             >
               <div style={{
@@ -611,14 +621,14 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
       {insights.length === 0 && !isLoading && (
         <div style={{
           textAlign: 'center',
-          padding: spacing[16],
-          color: colors.neutral[500],
+          padding: `${spacing[16]} ${spacing[8]}`,
+          color: colors.neutral[400],
         }}>
-          <BookOpen size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.5 }} />
-          <p style={{ fontSize: typography.fontSize.lg, marginBottom: spacing[2] }}>
+          <BookOpen size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.4 }} />
+          <p style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.neutral[500], marginBottom: spacing[2] }}>
             Nenhum insight cadastrado
           </p>
-          <p style={{ fontSize: typography.fontSize.sm }}>
+          <p style={{ fontSize: typography.fontSize.sm, color: colors.neutral[400] }}>
             Clique em "Novo Insight" para começar
           </p>
         </div>
@@ -637,7 +647,7 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                 style={{
                   position: 'fixed',
                   inset: 0,
-                  background: 'rgba(0, 0, 0, 0.5)',
+                  background: 'rgba(15,23,42,0.6)',
                   zIndex: 999998,
                   backdropFilter: 'blur(4px)',
                 }}
@@ -681,7 +691,7 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                   background: designSystem.helpers.hexToRgba(designSystem.colors.brand.secondary, 0.05),
                 }}>
                   <h3 style={{
-                    fontSize: typography.fontSize.xl,
+                    fontSize: typography.fontSize.lg,
                     fontWeight: typography.fontWeight.bold,
                     color: colors.neutral[900],
                   }}>
@@ -713,11 +723,11 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                 }}>
                   {/* COLUNA ESQUERDA - Form */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[4] }}>
-                    <h4 style={{ 
-                      fontSize: typography.fontSize.lg, 
+                    <h4 style={{
+                      fontSize: typography.fontSize.lg,
                       fontWeight: typography.fontWeight.bold,
-                      color: colors.neutral[800],
-                      marginBottom: spacing[2],
+                      color: colors.neutral[900],
+                      marginBottom: spacing[4],
                     }}>
                       Informações Básicas
                     </h4>
@@ -744,6 +754,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                           border: `1px solid ${colors.neutral[300]}`,
                           borderRadius: radius.lg,
                           fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.neutral[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -771,6 +791,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                           borderRadius: radius.lg,
                           fontSize: typography.fontSize.sm,
                           resize: 'vertical',
+                          outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.neutral[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -798,6 +828,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                           borderRadius: radius.lg,
                           fontSize: typography.fontSize.sm,
                           resize: 'vertical',
+                          outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.neutral[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -825,6 +865,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                             border: `1px solid ${colors.neutral[300]}`,
                             borderRadius: radius.lg,
                             fontSize: typography.fontSize.sm,
+                            outline: 'none',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = colors.primary;
+                            e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = colors.neutral[300];
+                            e.currentTarget.style.boxShadow = 'none';
                           }}
                         />
                       </div>
@@ -850,6 +900,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                             border: `1px solid ${colors.neutral[300]}`,
                             borderRadius: radius.lg,
                             fontSize: typography.fontSize.sm,
+                            outline: 'none',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = colors.primary;
+                            e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = colors.neutral[300];
+                            e.currentTarget.style.boxShadow = 'none';
                           }}
                         />
                       </div>
@@ -959,9 +1019,9 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                       <input
                         type="text"
                         value={formData.tags?.join(', ') || ''}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) 
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
                         })}
                         placeholder="Sustentabilidade, Eficiência Energética, ROI"
                         style={{
@@ -970,6 +1030,16 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                           border: `1px solid ${colors.neutral[300]}`,
                           borderRadius: radius.lg,
                           fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.neutral[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -984,10 +1054,11 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                         alignItems: 'center',
                         marginBottom: spacing[4],
                       }}>
-                        <h4 style={{ 
-                          fontSize: typography.fontSize.lg, 
+                        <h4 style={{
+                          fontSize: typography.fontSize.lg,
                           fontWeight: typography.fontWeight.bold,
-                          color: colors.neutral[800],
+                          color: colors.neutral[900],
+                          marginBottom: spacing[4],
                         }}>
                           Conteúdo do Artigo
                         </h4>
@@ -1240,14 +1311,24 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                       </div>
 
                       {(formData.contentBlocks || []).length === 0 && (
-                        <p style={{ 
-                          textAlign: 'center', 
-                          color: colors.neutral[500],
-                          fontSize: typography.fontSize.sm,
-                          padding: spacing[8],
+                        <div style={{
+                          textAlign: 'center',
+                          padding: `${spacing[12]} ${spacing[8]}`,
+                          color: colors.neutral[400],
                         }}>
-                          Nenhum bloco de conteúdo adicionado. Clique nos botões acima para começar.
-                        </p>
+                          <Type size={36} style={{ margin: '0 auto', marginBottom: spacing[3], opacity: 0.4 }} />
+                          <p style={{
+                            fontSize: typography.fontSize.sm,
+                            fontWeight: typography.fontWeight.semibold,
+                            color: colors.neutral[500],
+                            marginBottom: spacing[1],
+                          }}>
+                            Nenhum bloco de conteúdo adicionado
+                          </p>
+                          <p style={{ fontSize: typography.fontSize.xs, color: colors.neutral[400] }}>
+                            Clique nos botões acima para começar
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1260,10 +1341,10 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
                     border: `1px solid ${colors.neutral[200]}`,
                     overflow: 'auto',
                   }}>
-                    <h4 style={{ 
-                      fontSize: typography.fontSize.lg, 
+                    <h4 style={{
+                      fontSize: typography.fontSize.lg,
                       fontWeight: typography.fontWeight.bold,
-                      color: colors.neutral[800],
+                      color: colors.neutral[900],
                       marginBottom: spacing[4],
                     }}>
                       Preview do Artigo

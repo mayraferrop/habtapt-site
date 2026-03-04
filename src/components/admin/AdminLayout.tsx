@@ -2,6 +2,7 @@
 import React, { ReactNode } from 'react';
 import { Home, LogOut, Bell } from 'lucide-react';
 import { colors, shadows, spacing, radius, typography } from '../../utils/styles';
+import { designSystem } from '../design-system';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -25,12 +26,24 @@ export function AdminLayout({ children, notificationCount, onNotificationClick }
 
   return (
     <div style={{ minHeight: '100vh', background: colors.gray[50] }}>
+      {/* Brand Gradient Bar */}
+      <div
+        aria-hidden="true"
+        style={{
+          height: '3px',
+          background: `linear-gradient(90deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+          position: 'sticky',
+          top: 0,
+          zIndex: 51,
+        }}
+      />
+
       {/* Clean Minimal Header */}
       <header
         role="banner"
         style={{
           position: 'sticky',
-          top: 0,
+          top: '3px',
           zIndex: 50,
           background: colors.white,
           borderBottom: `1px solid ${colors.gray[200]}`,
@@ -54,7 +67,7 @@ export function AdminLayout({ children, notificationCount, onNotificationClick }
               style={{
                 fontSize: typography.fontSize.lg,
                 fontWeight: typography.fontWeight.bold,
-                color: colors.gray[900],
+                color: colors.primary,
                 letterSpacing: typography.letterSpacing.tight,
               }}
             >
@@ -63,9 +76,9 @@ export function AdminLayout({ children, notificationCount, onNotificationClick }
             <span
               style={{
                 fontSize: typography.fontSize.sm,
-                color: colors.gray[500],
+                color: colors.primary,
                 padding: `${spacing[1]} ${spacing[2]}`,
-                background: colors.gray[100],
+                background: designSystem.helpers.hexToRgba(colors.primary, 0.08),
                 borderRadius: radius.md,
                 fontWeight: typography.fontWeight.semibold,
               }}

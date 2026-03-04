@@ -353,21 +353,22 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
           aria-live="polite"
           style={{
             textAlign: 'center',
-            padding: spacing[12],
-            color: colors.gray[500],
+            padding: `${spacing[16]} ${spacing[8]}`,
+            color: colors.gray[400],
           }}
         >
-          <Building2 size={64} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.3 }} aria-hidden="true" />
-          <h3
+          <Building2 size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.4 }} aria-hidden="true" />
+          <p
             style={{
-              fontSize: typography.fontSize.xl,
+              fontSize: typography.fontSize.lg,
               fontWeight: typography.fontWeight.semibold,
+              color: colors.gray[500],
               marginBottom: spacing[2],
             }}
           >
             Nenhum projeto cadastrado
-          </h3>
-          <p style={{ fontSize: typography.fontSize.base, marginBottom: spacing[6] }}>
+          </p>
+          <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], marginBottom: spacing[6] }}>
             Comece adicionando um novo projeto ao portfólio
           </p>
           <AnimatedButton onClick={() => handleOpenModal()} variant="primary" icon={Plus}>
@@ -392,9 +393,19 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                 borderRadius: radius.lg,
                 overflow: 'hidden',
                 border: `1px solid ${colors.gray[200]}`,
-                transition: 'all 0.3s',
+                transition: 'all 0.2s ease',
+                boxShadow: 'none',
               }}
-              whileHover={{ boxShadow: shadows.lg }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = shadows.md;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = colors.gray[300];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.borderColor = colors.gray[200];
+              }}
             >
               {/* Image */}
               <div
@@ -658,7 +669,7 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
             style={{
               position: 'fixed',
               inset: 0,
-              background: designSystem.helpers.hexToRgba('#000', 0.5),
+              background: 'rgba(15,23,42,0.6)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -775,9 +786,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                   </div>
@@ -814,9 +827,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                   </div>
@@ -940,9 +955,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                   </div>
@@ -1210,9 +1227,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                   </div>
@@ -1249,9 +1268,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                     <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginTop: spacing[1] }}>
@@ -1291,9 +1312,11 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                       }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = colors.primary;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
                       }}
                       onBlur={(e) => {
                         e.currentTarget.style.borderColor = colors.gray[300];
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     />
                     <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginTop: spacing[1] }}>
@@ -1308,9 +1331,9 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                     paddingTop: spacing[4], 
                     borderTop: `2px solid ${colors.gray[200]}` 
                   }}>
-                    <h3 style={{ 
-                      fontSize: typography.fontSize.lg, 
-                      fontWeight: typography.fontWeight.semibold,
+                    <h3 style={{
+                      fontSize: typography.fontSize.lg,
+                      fontWeight: typography.fontWeight.bold,
                       color: colors.gray[900],
                       marginBottom: spacing[4]
                     }}>
@@ -1476,16 +1499,17 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                     ) : projectUnits.length === 0 ? (
                       <div style={{
                         textAlign: 'center',
-                        padding: spacing[6],
+                        padding: `${spacing[8]} ${spacing[6]}`,
                         background: colors.gray[50],
                         borderRadius: radius.md,
                         border: `1px dashed ${colors.gray[300]}`,
+                        color: colors.gray[400],
                       }}>
-                        <Home size={32} style={{ color: colors.gray[300], margin: '0 auto', marginBottom: spacing[2] }} />
-                        <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[500] }}>
+                        <Home size={36} style={{ color: colors.gray[300], margin: '0 auto', marginBottom: spacing[3], opacity: 0.4 }} />
+                        <p style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[1] }}>
                           Nenhuma unidade associada a este projeto
                         </p>
-                        <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[400], marginTop: spacing[1] }}>
+                        <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[400] }}>
                           Crie unidades na tab "Unidades" e selecione este projeto
                         </p>
                       </div>
@@ -1630,7 +1654,7 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
                     }}
                     onMouseEnter={(e) => {
                       if (!isSaving) {
-                        e.currentTarget.style.background = colors.primaryHover;
+                        e.currentTarget.style.background = '#234d6f';
                       }
                     }}
                     onMouseLeave={(e) => {

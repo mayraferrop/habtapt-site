@@ -545,16 +545,32 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       draggable
       onDragStart={() => setDraggingId(c.id)}
       onDragEnd={() => setDraggingId(null)}
+      onMouseEnter={(e) => {
+        if (draggingId !== c.id) {
+          e.currentTarget.style.boxShadow = shadows.md;
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.borderColor = colors.gray[300];
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (draggingId !== c.id) {
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.transform = 'none';
+          e.currentTarget.style.borderColor = colors.gray[200];
+        }
+      }}
       style={{
         background: colors.white,
         border: `1px solid ${colors.gray[200]}`,
         borderRadius: radius.lg,
         padding: spacing[3],
-        boxShadow: draggingId === c.id ? shadows.md : 'none',
+        boxShadow: draggingId === c.id ? shadows.lg : 'none',
+        transform: draggingId === c.id ? 'rotate(2deg)' : 'none',
         cursor: 'grab',
         display: 'flex',
         flexDirection: 'column',
         gap: spacing[2],
+        transition: 'all 0.15s ease',
       }}
     >
       {/* Header: nome + classificações + editar */}
@@ -771,7 +787,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 justifyContent: 'space-between',
                 padding: spacing[2],
                 marginBottom: spacing[2],
-                borderBottom: `2px solid ${designSystem.helpers.hexToRgba(stage.color, 0.6)}`,
+                borderTop: `3px solid ${stage.color}`,
+                borderBottom: `1px solid ${designSystem.helpers.hexToRgba(stage.color, 0.2)}`,
+                borderRadius: `${radius.sm} ${radius.sm} 0 0`,
+                background: designSystem.helpers.hexToRgba(stage.color, 0.03),
               }}
             >
               <span style={{ fontWeight: typography.fontWeight.bold, color: colors.gray[800], fontSize: typography.fontSize.sm }}>
@@ -813,12 +832,14 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 <div
                   style={{
                     textAlign: 'center',
+                    padding: `${spacing[8]} ${spacing[4]}`,
                     color: colors.gray[400],
-                    fontSize: typography.fontSize.xs,
-                    padding: spacing[4],
                   }}
                 >
-                  Arraste leads para esta etapa
+                  <Plus size={28} style={{ marginBottom: spacing[2], opacity: 0.3 }} />
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[400], margin: 0 }}>
+                    Arraste leads para esta etapa
+                  </p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
@@ -846,7 +867,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15,23,42,0.6)',
+            backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -862,7 +884,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               width: '100%',
               maxWidth: 560,
               padding: spacing[6],
-              boxShadow: shadows['2xl'],
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4] }}>
@@ -905,8 +927,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="Nome completo"
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
@@ -918,8 +942,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="email@exemplo.com"
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
                 <div>
@@ -930,8 +956,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="+351 000 000 000"
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
               </div>
@@ -943,8 +971,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   type="text"
                   value={form.interest}
                   onChange={(e) => setForm({ ...form, interest: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="Ex: Velask Residence, Investimento..."
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                 />
               </div>
 
@@ -1029,7 +1059,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 <select
                   value={form.origin}
                   onChange={(e) => setForm({ ...form, origin: e.target.value })}
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                 >
                   <option value="">— Selecionar —</option>
                   {ORIGINS.map((o) => (
@@ -1046,8 +1078,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   type="text"
                   value={form.desiredLocations}
                   onChange={(e) => setForm({ ...form, desiredLocations: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="Ex: Lisboa, Cascais, Porto"
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
@@ -1059,8 +1093,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="text"
                     value={form.maxBudget}
                     onChange={(e) => setForm({ ...form, maxBudget: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Ex: €500.000"
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
                 <div>
@@ -1071,8 +1107,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="text"
                     value={form.typology}
                     onChange={(e) => setForm({ ...form, typology: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Ex: T1, T2, T3"
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
               </div>
@@ -1093,7 +1131,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   <select
                     value={form.projectId}
                     onChange={(e) => setForm({ ...form, projectId: e.target.value, unitId: '' })}
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                   >
                     <option value="">— Nenhum —</option>
                     {controloProjects.map((p) => (
@@ -1108,6 +1148,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   <select
                     value={form.unitId}
                     onChange={(e) => setForm({ ...form, unitId: e.target.value })}
+                    onFocus={(e) => { if (form.projectId) { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); } }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     disabled={!form.projectId || controloUnits.length === 0}
                     style={{
                       width: '100%',
@@ -1118,6 +1160,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       outline: 'none',
                       background: !form.projectId ? colors.gray[100] : colors.white,
                       cursor: !form.projectId ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
                     }}
                   >
                     <option value="">— Geral —</option>
@@ -1140,8 +1183,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="number"
                     value={form.proposalValue}
                     onChange={(e) => setForm({ ...form, proposalValue: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Ex: 350000"
-                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
               )}
@@ -1153,9 +1198,11 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="Observações importantes sobre o perfil do lead"
                   rows={3}
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'all 0.2s ease' }}
                 />
               </div>
 
@@ -1175,7 +1222,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       type="date"
                       value={newActivity.date}
                       onChange={(e) => setNewActivity({ ...newActivity, date: e.target.value })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', transition: 'all 0.2s ease' }}
                     />
                   </div>
                   <div>
@@ -1183,7 +1232,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     <select
                       value={newActivity.channel}
                       onChange={(e) => setNewActivity({ ...newActivity, channel: e.target.value })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                     >
                       <option value="">— Selecionar —</option>
                       {CHANNELS.map((ch) => (
@@ -1198,8 +1249,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="text"
                     value={newActivity.type}
                     onChange={(e) => setNewActivity({ ...newActivity, type: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Ex: Follow-up, Qualificação, Visita..."
-                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
                 <div>
@@ -1207,9 +1260,11 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   <textarea
                     value={newActivity.content}
                     onChange={(e) => setNewActivity({ ...newActivity, content: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Descreva a interação..."
                     rows={2}
-                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'all 0.2s ease' }}
                   />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1233,7 +1288,11 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               {loadingActivities ? (
                 <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>A carregar...</div>
               ) : activities.length === 0 ? (
-                <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>Nenhuma atividade registada</div>
+                <div style={{ textAlign: 'center', padding: `${spacing[8]} ${spacing[4]}`, color: colors.gray[400] }}>
+                  <MessageSquare size={32} style={{ marginBottom: spacing[2], opacity: 0.3 }} />
+                  <p style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[1] }}>Nenhuma atividade registada</p>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[400], margin: 0 }}>Registe a primeira interacao acima</p>
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
                   {activities.map((act) => (
@@ -1267,8 +1326,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       <button
                         type="button"
                         onClick={() => handleDeleteActivity(act.id)}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = designSystem.helpers.hexToRgba(colors.error, 0.1); e.currentTarget.style.color = colors.error; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = colors.gray[400]; }}
                         aria-label="Eliminar atividade"
-                        style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '2px' }}
+                        style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '4px', borderRadius: radius.sm, transition: 'all 0.2s ease' }}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1292,8 +1353,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     type="text"
                     value={newFollowup.title}
                     onChange={(e) => setNewFollowup({ ...newFollowup, title: e.target.value })}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                     placeholder="Ex: Ligar para confirmar interesse"
-                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }}
+                    style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', transition: 'all 0.2s ease' }}
                   />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[2] }}>
@@ -1302,7 +1365,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     <select
                       value={newFollowup.type}
                       onChange={(e) => setNewFollowup({ ...newFollowup, type: e.target.value as FollowupType })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                     >
                       {FOLLOWUP_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -1314,7 +1379,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                     <select
                       value={newFollowup.priority}
                       onChange={(e) => setNewFollowup({ ...newFollowup, priority: e.target.value as FollowupPriority })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                     >
                       {FOLLOWUP_PRIORITIES.map((p) => (
                         <option key={p.value} value={p.value}>{p.label}</option>
@@ -1329,7 +1396,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       type="date"
                       value={newFollowup.dueDate}
                       onChange={(e) => setNewFollowup({ ...newFollowup, dueDate: e.target.value })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', transition: 'all 0.2s ease' }}
                     />
                   </div>
                   <div>
@@ -1338,7 +1407,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                       type="time"
                       value={newFollowup.dueTime}
                       onChange={(e) => setNewFollowup({ ...newFollowup, dueTime: e.target.value })}
-                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                      style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', transition: 'all 0.2s ease' }}
                     />
                   </div>
                 </div>
@@ -1363,7 +1434,11 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               {loadingFollowups ? (
                 <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>A carregar...</div>
               ) : followups.length === 0 ? (
-                <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>Nenhum follow-up registado</div>
+                <div style={{ textAlign: 'center', padding: `${spacing[8]} ${spacing[4]}`, color: colors.gray[400] }}>
+                  <Clock size={32} style={{ marginBottom: spacing[2], opacity: 0.3 }} />
+                  <p style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[1] }}>Nenhum follow-up registado</p>
+                  <p style={{ fontSize: typography.fontSize.xs, color: colors.gray[400], margin: 0 }}>Crie o primeiro follow-up acima</p>
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
                   {followups.map((fu) => {
@@ -1407,8 +1482,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                             <button
                               type="button"
                               onClick={() => handleDeleteFollowup(fu.id)}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = designSystem.helpers.hexToRgba(colors.error, 0.1); e.currentTarget.style.color = colors.error; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = colors.gray[400]; }}
                               aria-label="Eliminar follow-up"
-                              style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '2px' }}
+                              style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '4px', borderRadius: radius.sm, transition: 'all 0.2s ease' }}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -1583,7 +1660,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(15,23,42,0.6)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1599,7 +1677,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
             width: '100%',
             maxWidth: 520,
             padding: spacing[6],
-            boxShadow: shadows['2xl'],
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4] }}>
@@ -1624,8 +1702,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 type="text"
                 value={newLead.name}
                 onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                 placeholder="Nome completo"
-                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
               />
             </div>
 
@@ -1638,8 +1718,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   type="email"
                   value={newLead.email}
                   onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="email@exemplo.com"
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                 />
               </div>
               <div>
@@ -1650,8 +1732,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   type="tel"
                   value={newLead.phone}
                   onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   placeholder="+351 000 000 000"
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
                 />
               </div>
             </div>
@@ -1664,8 +1748,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 type="text"
                 value={newLead.interest}
                 onChange={(e) => setNewLead({ ...newLead, interest: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                 placeholder="Ex: Velask Residence, Investimento, Compra..."
-                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none' }}
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
               />
             </div>
 
@@ -1677,7 +1763,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 <select
                   value={newLead.origin}
                   onChange={(e) => setNewLead({ ...newLead, origin: e.target.value })}
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                 >
                   <option value="">— Selecionar —</option>
                   {ORIGINS.map((o) => (
@@ -1692,7 +1780,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 <select
                   value={newLead.projectId}
                   onChange={(e) => setNewLead({ ...newLead, projectId: e.target.value })}
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
                 >
                   <option value="">— Nenhum —</option>
                   {controloProjects.map((p) => (
@@ -1709,9 +1799,11 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               <textarea
                 value={newLead.message}
                 onChange={(e) => setNewLead({ ...newLead, message: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                 placeholder="Notas sobre o lead"
                 rows={3}
-                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'all 0.2s ease' }}
               />
             </div>
 

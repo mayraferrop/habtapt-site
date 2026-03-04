@@ -117,12 +117,13 @@ export function KPIDashboard({ projectId, units, targets }: KPIDashboardProps) {
 
   if (!kpis || kpis.totalContacts === 0) {
     return (
-      <div style={{ padding: spacing[4], textAlign: 'center' }}>
-        <p style={{ color: colors.gray[500], fontSize: typography.fontSize.sm, marginBottom: spacing[2] }}>
-          Nenhum lead associado a este projeto.
+      <div style={{ textAlign: 'center', padding: `${spacing[16]} ${spacing[8]}`, color: colors.gray[400] }}>
+        <Users size={48} style={{ marginBottom: spacing[4], opacity: 0.4 }} />
+        <p style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[2] }}>
+          Nenhum lead associado
         </p>
-        <p style={{ color: colors.gray[400], fontSize: typography.fontSize.xs }}>
-          Associe leads a este projeto no tab Leads (editar lead → seleccionar Projeto).
+        <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400] }}>
+          Associe leads a este projeto no tab Leads (editar lead - seleccionar Projeto).
         </p>
       </div>
     );
@@ -139,13 +140,15 @@ export function KPIDashboard({ projectId, units, targets }: KPIDashboardProps) {
       {/* Global status badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginBottom: spacing[4] }}>
         <span style={{
-          display: 'inline-block',
-          padding: `${spacing[1]} ${spacing[3]}`,
-          borderRadius: radius.md,
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: `${spacing[2]} ${spacing[4]}`,
+          borderRadius: radius.full,
           fontSize: typography.fontSize.sm,
           fontWeight: typography.fontWeight.bold,
           background: sc.bg,
           color: sc.color,
+          letterSpacing: typography.letterSpacing.wide,
         }}>
           {sc.label}
         </span>
@@ -175,28 +178,30 @@ export function KPIDashboard({ projectId, units, targets }: KPIDashboardProps) {
         marginBottom: spacing[6],
       }}>
         <div style={{
-          padding: spacing[4],
+          padding: spacing[5],
           background: colors.white,
           border: `1px solid ${colors.gray[200]}`,
           borderRadius: radius.lg,
+          borderTop: `3px solid ${colors.primary}`,
         }}>
-          <div style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[1], textTransform: 'uppercase', fontWeight: typography.fontWeight.semibold }}>
-            Lead → Visita
+          <div style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[2], textTransform: 'uppercase', fontWeight: typography.fontWeight.semibold, letterSpacing: typography.letterSpacing.wide }}>
+            Lead - Visita
           </div>
-          <div style={{ fontSize: typography.fontSize['2xl'], fontWeight: typography.fontWeight.bold, color: colors.primary }}>
+          <div style={{ fontSize: '2rem', fontWeight: typography.fontWeight.bold, color: colors.primary }}>
             {kpis.leadToVisitRate}%
           </div>
         </div>
         <div style={{
-          padding: spacing[4],
+          padding: spacing[5],
           background: colors.white,
           border: `1px solid ${colors.gray[200]}`,
           borderRadius: radius.lg,
+          borderTop: `3px solid ${colors.secondary}`,
         }}>
-          <div style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[1], textTransform: 'uppercase', fontWeight: typography.fontWeight.semibold }}>
-            Visita → Proposta
+          <div style={{ fontSize: typography.fontSize.xs, color: colors.gray[500], marginBottom: spacing[2], textTransform: 'uppercase', fontWeight: typography.fontWeight.semibold, letterSpacing: typography.letterSpacing.wide }}>
+            Visita - Proposta
           </div>
-          <div style={{ fontSize: typography.fontSize['2xl'], fontWeight: typography.fontWeight.bold, color: colors.secondary }}>
+          <div style={{ fontSize: '2rem', fontWeight: typography.fontWeight.bold, color: colors.secondary }}>
             {kpis.visitToProposalRate}%
           </div>
         </div>
@@ -334,12 +339,13 @@ export function KPIDashboard({ projectId, units, targets }: KPIDashboardProps) {
                     <td style={tdStyle}>
                       <span style={{
                         display: 'inline-block',
-                        padding: `${spacing[1]} ${spacing[2]}`,
-                        borderRadius: radius.md,
+                        padding: `${spacing[1]} ${spacing[3]}`,
+                        borderRadius: radius.full,
                         fontSize: typography.fontSize.xs,
                         fontWeight: typography.fontWeight.bold,
                         background: usc.bg,
                         color: usc.color,
+                        letterSpacing: typography.letterSpacing.wide,
                       }}>
                         {usc.label}
                       </span>

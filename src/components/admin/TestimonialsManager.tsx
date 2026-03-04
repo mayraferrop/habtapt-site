@@ -246,21 +246,22 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
           aria-live="polite"
           style={{
             textAlign: 'center',
-            padding: spacing[12],
-            color: colors.gray[500],
+            padding: `${spacing[16]} ${spacing[8]}`,
+            color: colors.gray[400],
           }}
         >
-          <User size={64} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.3 }} aria-hidden="true" />
-          <h3
+          <User size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.4 }} aria-hidden="true" />
+          <p
             style={{
-              fontSize: typography.fontSize.xl,
+              fontSize: typography.fontSize.lg,
               fontWeight: typography.fontWeight.semibold,
+              color: colors.gray[500],
               marginBottom: spacing[2],
             }}
           >
             Nenhum depoimento cadastrado
-          </h3>
-          <p style={{ fontSize: typography.fontSize.base, marginBottom: spacing[6] }}>
+          </p>
+          <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], marginBottom: spacing[6] }}>
             Comece adicionando um novo depoimento
           </p>
           <AnimatedButton onClick={() => handleOpenModal()} variant="secondary" icon={Plus}>
@@ -286,9 +287,19 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                 padding: spacing[6],
                 border: `1px solid ${colors.gray[200]}`,
                 position: 'relative',
-                transition: 'all 0.3s',
+                transition: 'all 0.2s ease',
+                boxShadow: 'none',
               }}
-              whileHover={{ boxShadow: shadows.lg }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = shadows.md;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = colors.gray[300];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.borderColor = colors.gray[200];
+              }}
             >
               {/* Action Buttons */}
               <div
@@ -330,6 +341,13 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                     alignItems: 'center',
                     justifyContent: 'center',
                     transition: 'all 0.2s',
+                    color: colors.error,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = colors.error + '10';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = colors.white;
                   }}
                   title="Excluir"
                   aria-label="Excluir depoimento"
@@ -464,7 +482,7 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: 'rgba(0, 0, 0, 0.5)',
+                  background: 'rgba(15,23,42,0.6)',
                   zIndex: 999998,
                   backdropFilter: 'blur(4px)',
                   display: 'flex',
@@ -552,6 +570,15 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                           borderRadius: radius.md,
                           fontSize: typography.fontSize.base,
                           outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26, 62, 92, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.gray[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -581,6 +608,15 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                           borderRadius: radius.md,
                           fontSize: typography.fontSize.base,
                           outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26, 62, 92, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.gray[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -610,6 +646,15 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                           borderRadius: radius.md,
                           fontSize: typography.fontSize.base,
                           outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26, 62, 92, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.gray[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -687,6 +732,15 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                           outline: 'none',
                           fontFamily: 'inherit',
                           resize: 'vertical',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26, 62, 92, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.gray[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>
@@ -716,6 +770,15 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
                           borderRadius: radius.md,
                           fontSize: typography.fontSize.base,
                           outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = colors.primary;
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26, 62, 92, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = colors.gray[300];
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       />
                     </div>

@@ -30,7 +30,8 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
         position: 'fixed',
         inset: 0,
         zIndex: 100,
-        background: 'rgba(0,0,0,0.5)',
+        background: 'rgba(15,23,42,0.6)',
+        backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -49,7 +50,7 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
           maxWidth: '600px',
           maxHeight: '90vh',
           overflow: 'auto',
-          boxShadow: shadows.xl,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
         }}
       >
         {children}
@@ -112,6 +113,8 @@ function FieldInput({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
         placeholder={placeholder}
         style={{
           width: '100%',
@@ -122,6 +125,7 @@ function FieldInput({
           color: colors.gray[900],
           outline: 'none',
           boxSizing: 'border-box',
+          transition: 'all 0.2s ease',
         }}
       />
     </div>
@@ -356,9 +360,11 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
       <section>
         <SectionHeader title="Unidades" onAdd={() => openUnitModal()} />
         {units.length === 0 ? (
-          <p style={{ color: colors.gray[500], fontSize: typography.fontSize.sm }}>
-            Nenhuma unidade registada. Clique em &quot;Adicionar&quot; para começar.
-          </p>
+          <div style={{ textAlign: 'center', padding: `${spacing[12]} ${spacing[8]}`, color: colors.gray[400] }}>
+            <Plus size={36} style={{ marginBottom: spacing[3], opacity: 0.3 }} />
+            <p style={{ fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[2] }}>Nenhuma unidade registada</p>
+            <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], margin: 0 }}>Clique em &quot;Adicionar&quot; para comecar.</p>
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -431,6 +437,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
               min={0}
               value={targetsForm.qualifiedLeads14d}
               onChange={(e) => setTargetsForm({ ...targetsForm, qualifiedLeads14d: Number(e.target.value) })}
+              onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
               style={{
                 width: '100%',
                 padding: `${spacing[2]} ${spacing[3]}`,
@@ -438,6 +446,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                 borderRadius: radius.md,
                 fontSize: typography.fontSize.sm,
                 boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'all 0.2s ease',
               }}
             />
           </div>
@@ -450,6 +460,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
               min={0}
               value={targetsForm.visits14d}
               onChange={(e) => setTargetsForm({ ...targetsForm, visits14d: Number(e.target.value) })}
+              onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
               style={{
                 width: '100%',
                 padding: `${spacing[2]} ${spacing[3]}`,
@@ -457,6 +469,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                 borderRadius: radius.md,
                 fontSize: typography.fontSize.sm,
                 boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'all 0.2s ease',
               }}
             />
           </div>
@@ -469,6 +483,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
               min={0}
               value={targetsForm.proposals30d}
               onChange={(e) => setTargetsForm({ ...targetsForm, proposals30d: Number(e.target.value) })}
+              onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
               style={{
                 width: '100%',
                 padding: `${spacing[2]} ${spacing[3]}`,
@@ -476,6 +492,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                 borderRadius: radius.md,
                 fontSize: typography.fontSize.sm,
                 boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'all 0.2s ease',
               }}
             />
           </div>
@@ -491,9 +509,11 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
       <section>
         <SectionHeader title="Calendário de Revisão" onAdd={() => openReviewModal()} />
         {reviews.length === 0 ? (
-          <p style={{ color: colors.gray[500], fontSize: typography.fontSize.sm }}>
-            Nenhuma data de revisão agendada.
-          </p>
+          <div style={{ textAlign: 'center', padding: `${spacing[12]} ${spacing[8]}`, color: colors.gray[400] }}>
+            <Plus size={36} style={{ marginBottom: spacing[3], opacity: 0.3 }} />
+            <p style={{ fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[2] }}>Nenhuma data agendada</p>
+            <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], margin: 0 }}>Agende a primeira data de revisao.</p>
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -602,6 +622,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                 <select
                   value={reviewForm.type || 'weekly'}
                   onChange={(e) => setReviewForm({ ...reviewForm, type: e.target.value as ControloReviewDate['type'] })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   style={{
                     width: '100%',
                     padding: `${spacing[2]} ${spacing[3]}`,
@@ -611,6 +633,7 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                     color: colors.gray[900],
                     outline: 'none',
                     boxSizing: 'border-box',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   <option value="weekly">Semanal</option>

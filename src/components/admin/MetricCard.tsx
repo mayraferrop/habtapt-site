@@ -41,15 +41,18 @@ export function MetricCard({
         borderRadius: radius.lg,
         padding: spacing[4],
         border: `1px solid ${colors.gray[200]}`,
+        borderLeft: `4px solid ${selectedColor}`,
         transition: 'all 0.2s',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = shadows.base;
         e.currentTarget.style.borderColor = colors.gray[300];
+        e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = 'none';
         e.currentTarget.style.borderColor = colors.gray[200];
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing[3] }}>
@@ -59,9 +62,9 @@ export function MetricCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '36px',
-            height: '36px',
-            borderRadius: radius.md,
+            width: '40px',
+            height: '40px',
+            borderRadius: radius.lg,
             background: designSystem.helpers.hexToRgba(selectedColor, 0.1),
           }}
         >
@@ -116,7 +119,7 @@ export function MetricCard({
 
       <p
         style={{
-          fontSize: typography.fontSize['3xl'],
+          fontSize: typography.fontSize['4xl'],
           fontWeight: typography.fontWeight.extrabold,
           color: colors.gray[900],
           letterSpacing: typography.letterSpacing.tight,

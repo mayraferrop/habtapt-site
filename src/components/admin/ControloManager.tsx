@@ -252,36 +252,36 @@ export function ControloManager() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: spacing[8],
+        padding: `${spacing[16]} ${spacing[8]}`,
         gap: spacing[4],
       }}>
         <div style={{
-          width: 64,
-          height: 64,
+          width: 72,
+          height: 72,
           borderRadius: '50%',
           background: colors.gray[100],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <BarChart3 size={28} color={colors.gray[400]} />
+          <BarChart3 size={32} color={colors.gray[400]} style={{ opacity: 0.6 }} />
         </div>
-        <h3 style={{
+        <p style={{
           fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.semibold,
-          color: colors.gray[700],
+          color: colors.gray[500],
           margin: 0,
         }}>
           Nenhum projeto de controlo
-        </h3>
+        </p>
         <p style={{
           fontSize: typography.fontSize.sm,
-          color: colors.gray[500],
+          color: colors.gray[400],
           textAlign: 'center',
           margin: 0,
           maxWidth: 360,
         }}>
-          Crie um projeto para começar a monitorizar unidades, registos semanais e KPIs.
+          Crie um projeto para comecar a monitorizar unidades, registos semanais e KPIs.
         </p>
 
         {!showNewProject ? (
@@ -329,22 +329,30 @@ export function ControloManager() {
               placeholder="ID / slug (ex: velask)"
               value={newProjectId}
               onChange={(e) => setNewProjectId(e.target.value)}
+              onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
               style={{
                 padding: `${spacing[2]} ${spacing[3]}`,
                 border: `1px solid ${colors.gray[300]}`,
                 borderRadius: radius.md,
                 fontSize: typography.fontSize.sm,
+                outline: 'none',
+                transition: 'all 0.2s ease',
               }}
             />
             <input
               placeholder="Nome (ex: Velask)"
               value={newProjectLabel}
               onChange={(e) => setNewProjectLabel(e.target.value)}
+              onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
               style={{
                 padding: `${spacing[2]} ${spacing[3]}`,
                 border: `1px solid ${colors.gray[300]}`,
                 borderRadius: radius.md,
                 fontSize: typography.fontSize.sm,
+                outline: 'none',
+                transition: 'all 0.2s ease',
               }}
             />
             <button
@@ -396,6 +404,8 @@ export function ControloManager() {
             id="project-select"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
+            onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
             style={{
               padding: `${spacing[2]} ${spacing[3]}`,
               borderRadius: radius.md,
@@ -405,6 +415,7 @@ export function ControloManager() {
               background: colors.white,
               cursor: 'pointer',
               outline: 'none',
+              transition: 'all 0.2s ease',
             }}
           >
             {projects.map((p) => (
@@ -414,6 +425,8 @@ export function ControloManager() {
 
           <button
             onClick={() => handleDeleteProject(projectId)}
+            onMouseEnter={(e) => { e.currentTarget.style.background = designSystem.helpers.hexToRgba(colors.error, 0.1); e.currentTarget.style.color = colors.error; e.currentTarget.style.borderColor = colors.error; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.gray[500]; e.currentTarget.style.borderColor = colors.gray[300]; }}
             title="Eliminar projeto selecionado"
             style={{
               display: 'flex',
@@ -426,6 +439,7 @@ export function ControloManager() {
               borderRadius: radius.md,
               cursor: 'pointer',
               color: colors.gray[500],
+              transition: 'all 0.2s ease',
             }}
           >
             <Trash2 size={14} />

@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, Save, X, ChevronLeft, ChevronRight } from '../../ic
 import { toast } from 'sonner';
 import { supabaseFetch } from '../../../utils/supabase/client';
 import { colors, spacing, radius, typography, shadows } from '../../../utils/styles';
+import { designSystem } from '../../design-system';
 import { AnimatedButton } from '../../primitives/AnimatedButton';
 import type { ControloUnit, ControloWeeklyLog } from '../ControloManager';
 
@@ -51,7 +52,8 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 100,
-        background: 'rgba(0,0,0,0.5)',
+        background: 'rgba(15,23,42,0.6)',
+        backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: spacing[4],
       }}
@@ -64,7 +66,7 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
         style={{
           background: colors.white, borderRadius: radius.xl,
           width: '100%', maxWidth: '640px', maxHeight: '90vh', overflow: 'auto',
-          boxShadow: shadows.xl,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
         }}
       >
         {children}
@@ -85,12 +87,14 @@ function FieldInput({ label, value, onChange, type = 'text', placeholder }: {
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
         placeholder={placeholder}
         style={{
           width: '100%', padding: `${spacing[2]} ${spacing[3]}`,
           border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md,
           fontSize: typography.fontSize.sm, color: colors.gray[900], outline: 'none',
-          boxSizing: 'border-box',
+          boxSizing: 'border-box', transition: 'all 0.2s ease',
         }}
       />
     </div>
@@ -229,10 +233,13 @@ export function WeeklyLogView({ projectId, units, weeklyLogs, onRefresh }: Weekl
           <select
             value={selectedUnit}
             onChange={(e) => setSelectedUnit(e.target.value)}
+            onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
             style={{
               padding: `${spacing[2]} ${spacing[3]}`, borderRadius: radius.md,
               border: `1px solid ${colors.gray[300]}`, fontSize: typography.fontSize.sm,
               color: colors.gray[900], background: colors.white, cursor: 'pointer',
+              outline: 'none', transition: 'all 0.2s ease',
             }}
           >
             <option value="all">Todas</option>
@@ -262,9 +269,11 @@ export function WeeklyLogView({ projectId, units, weeklyLogs, onRefresh }: Weekl
 
       {/* Table */}
       {filteredLogs.length === 0 ? (
-        <p style={{ color: colors.gray[500], fontSize: typography.fontSize.sm, padding: spacing[4] }}>
-          Sem registos para esta semana{selectedUnit !== 'all' ? ' e unidade' : ''}.
-        </p>
+        <div style={{ textAlign: 'center', padding: `${spacing[12]} ${spacing[8]}`, color: colors.gray[400] }}>
+          <Plus size={36} style={{ marginBottom: spacing[3], opacity: 0.3 }} />
+          <p style={{ fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.gray[500], marginBottom: spacing[2] }}>Sem registos</p>
+          <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], margin: 0 }}>Sem registos para esta semana{selectedUnit !== 'all' ? ' e unidade' : ''}.</p>
+        </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -331,10 +340,13 @@ export function WeeklyLogView({ projectId, units, weeklyLogs, onRefresh }: Weekl
                 <select
                   value={form.unitId || ''}
                   onChange={(e) => setForm({ ...form, unitId: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   style={{
                     width: '100%', padding: `${spacing[2]} ${spacing[3]}`,
                     border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md,
                     fontSize: typography.fontSize.sm, color: colors.gray[900], boxSizing: 'border-box',
+                    outline: 'none', transition: 'all 0.2s ease',
                   }}
                 >
                   <option value="">Selecionar...</option>

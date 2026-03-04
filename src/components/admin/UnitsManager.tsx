@@ -132,7 +132,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: radius.md,
   fontSize: typography.fontSize.base,
   outline: 'none',
-  transition: 'border-color 0.2s',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -419,6 +419,14 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
             padding: `${spacing[2]} ${spacing[3]}`,
             fontSize: typography.fontSize.sm,
           }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.primary;
+            e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.gray[300];
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <option value="">Todos os projetos</option>
           <option value="__none__">Independentes</option>
@@ -437,6 +445,14 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
             padding: `${spacing[2]} ${spacing[3]}`,
             fontSize: typography.fontSize.sm,
           }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.primary;
+            e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.gray[300];
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <option value="">Todos os status</option>
           {statusOptions.map(o => (
@@ -453,6 +469,14 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
             minWidth: '120px',
             padding: `${spacing[2]} ${spacing[3]}`,
             fontSize: typography.fontSize.sm,
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.primary;
+            e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1);
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.gray[300];
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           <option value="">Todas tipologias</option>
@@ -471,21 +495,22 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
         <div
           style={{
             textAlign: 'center',
-            padding: spacing[12],
-            color: colors.gray[500],
+            padding: `${spacing[16]} ${spacing[8]}`,
+            color: colors.gray[400],
           }}
         >
-          <Building2 size={64} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.3 }} />
-          <h3
+          <Building2 size={48} style={{ margin: '0 auto', marginBottom: spacing[4], opacity: 0.4 }} />
+          <p
             style={{
-              fontSize: typography.fontSize.xl,
+              fontSize: typography.fontSize.lg,
               fontWeight: typography.fontWeight.semibold,
+              color: colors.gray[500],
               marginBottom: spacing[2],
             }}
           >
             Nenhuma unidade encontrada
-          </h3>
-          <p style={{ fontSize: typography.fontSize.base, marginBottom: spacing[6] }}>
+          </p>
+          <p style={{ fontSize: typography.fontSize.sm, color: colors.gray[400], marginBottom: spacing[6] }}>
             {units.length === 0
               ? 'Comece adicionando unidades ou use o Seed Velask'
               : 'Ajuste os filtros para ver mais resultados'}
@@ -509,9 +534,19 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
                 borderRadius: radius.lg,
                 overflow: 'hidden',
                 border: `1px solid ${colors.gray[200]}`,
-                transition: 'all 0.3s',
+                transition: 'all 0.2s ease',
+                boxShadow: 'none',
               }}
-              whileHover={{ boxShadow: shadows.lg }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = shadows.md;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = colors.gray[300];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.borderColor = colors.gray[200];
+              }}
             >
               {/* Image */}
               <div
@@ -764,7 +799,7 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
             style={{
               position: 'fixed',
               inset: 0,
-              background: designSystem.helpers.hexToRgba('#000', 0.5),
+              background: 'rgba(15,23,42,0.6)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1329,10 +1364,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: typography.fontSize.lg,
         fontWeight: typography.fontWeight.bold,
-        color: colors.gray[800],
+        color: colors.gray[900],
         paddingBottom: spacing[2],
         borderBottom: `1px solid ${colors.gray[200]}`,
         marginTop: spacing[2],
+        marginBottom: spacing[4],
       }}
     >
       {children}

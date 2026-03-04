@@ -553,14 +553,23 @@ export function AdminPanel() {
           overflow: 'hidden',
         }}
       >
-        {/* Clean Tabs with ARIA */}
+        {/* Clean Tabs with ARIA - Segmented Control */}
         <div
           role="tablist"
           aria-label="Seleção de dados administrativos"
           style={{
             display: 'flex',
+            overflowX: 'auto',
+            flexWrap: 'nowrap',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            padding: '2px',
+            gap: '2px',
+            background: colors.gray[50],
+            borderRadius: radius.lg,
+            margin: spacing[3],
             borderBottom: `1px solid ${colors.gray[200]}`,
-            background: colors.white,
+            alignItems: 'center',
           }}
         >
           {[
@@ -573,52 +582,76 @@ export function AdminPanel() {
             { id: 'insights' as const, label: 'Insights', icon: BookOpen, count: insights.length },
             { id: 'testimonials' as const, label: 'Depoimentos', icon: MessageSquare, count: testimonialsCount },
             { id: 'controlo' as const, label: 'Controlo', icon: BarChart3, count: 0 },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`tabpanel-${tab.id}`}
-              id={`tab-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: spacing[2],
-                padding: `${spacing[3]} ${spacing[4]}`,
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === tab.id ? `2px solid ${colors.primary}` : '2px solid transparent',
-                color: activeTab === tab.id ? colors.primary : colors.gray[600],
-                fontWeight: activeTab === tab.id ? typography.fontWeight.bold : typography.fontWeight.medium,
-                fontSize: typography.fontSize.sm,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              <tab.icon size={18} aria-hidden="true" />
-              <span>{tab.label}</span>
-              <span
-                aria-label={`${tab.count} itens`}
+          ].flatMap((tab, index) => {
+            const tabElement = (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`tabpanel-${tab.id}`}
+                id={`tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: `${spacing[1]} ${spacing[2]}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: spacing[2],
+                  padding: `${spacing[2]} ${spacing[4]}`,
                   background: activeTab === tab.id
-                    ? designSystem.helpers.hexToRgba(colors.primary, 0.1)
-                    : colors.gray[100],
-                  color: activeTab === tab.id ? colors.primary : colors.gray[600],
+                    ? designSystem.helpers.hexToRgba(colors.primary, 0.08)
+                    : 'transparent',
+                  border: 'none',
                   borderRadius: radius.md,
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.bold,
-                  minWidth: '24px',
-                  textAlign: 'center',
+                  color: activeTab === tab.id ? colors.primary : colors.gray[500],
+                  fontWeight: activeTab === tab.id ? typography.fontWeight.bold : typography.fontWeight.medium,
+                  fontSize: typography.fontSize.sm,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {tab.count}
-              </span>
-            </button>
-          ))}
+                <tab.icon size={18} aria-hidden="true" />
+                <span>{tab.label}</span>
+                <span
+                  aria-label={`${tab.count} itens`}
+                  style={{
+                    padding: `${spacing[1]} ${spacing[2]}`,
+                    background: activeTab === tab.id
+                      ? designSystem.helpers.hexToRgba(colors.primary, 0.1)
+                      : colors.gray[100],
+                    color: activeTab === tab.id ? colors.primary : colors.gray[600],
+                    borderRadius: radius.md,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.bold,
+                    minWidth: '24px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+
+            // Add dividers after Follow-ups (index 2) and Depoimentos (index 7)
+            if (index === 2 || index === 7) {
+              return [
+                tabElement,
+                <div
+                  key={`divider-${index}`}
+                  aria-hidden="true"
+                  style={{
+                    width: '1px',
+                    height: '24px',
+                    background: colors.gray[200],
+                    flexShrink: 0,
+                    margin: '0 4px',
+                  }}
+                />,
+              ];
+            }
+
+            return [tabElement];
+          })}
         </div>
 
         {/* Compact Toolbar - Only for contacts and subscribers */}
