@@ -409,6 +409,12 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     message: '',
     projectId: '',
     origin: '',
+    classifications: [] as string[],
+    desiredLocations: '',
+    maxBudget: '',
+    typology: '',
+    notes: '',
+    unitId: '',
   });
 
   // Fetch controlo projects on mount
@@ -424,7 +430,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     })();
   }, []);
 
-  // Fetch units when projectId changes
+  // Fetch units when projectId changes (edit form)
   React.useEffect(() => {
     if (!form.projectId) {
       setControloUnits([]);
@@ -440,6 +446,24 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       } catch {}
     })();
   }, [form.projectId]);
+
+  // Fetch units when projectId changes (create form)
+  const [createUnits, setCreateUnits] = useState<ControloUnitOption[]>([]);
+  React.useEffect(() => {
+    if (!newLead.projectId) {
+      setCreateUnits([]);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await supabaseFetch(`controlo/units?projectId=${newLead.projectId}`, {}, 1, true);
+        const data = await res.json();
+        if (res.ok && data.units) {
+          setCreateUnits(data.units);
+        }
+      } catch {}
+    })();
+  }, [newLead.projectId]);
 
   // Fetch activities when editing a contact
   const fetchActivities = React.useCallback(async (contactId: string) => {
@@ -876,17 +900,24 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     }
     setIsSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        name: newLead.name.trim(),
+        email: newLead.email.trim() || `lead-${Date.now()}@manual.habta.eu`,
+        phone: newLead.phone.trim(),
+        interest: newLead.interest.trim() || 'Lead manual',
+        message: newLead.message.trim() || 'Criado manualmente no admin',
+        projectId: newLead.projectId || undefined,
+        origin: newLead.origin || undefined,
+      };
+      if (newLead.classifications.length > 0) payload.classifications = newLead.classifications;
+      if (newLead.desiredLocations.trim()) payload.desiredLocations = newLead.desiredLocations.split(',').map((s) => s.trim()).filter(Boolean);
+      if (newLead.maxBudget.trim()) payload.maxBudget = newLead.maxBudget.trim();
+      if (newLead.typology.trim()) payload.typology = newLead.typology.trim();
+      if (newLead.notes.trim()) payload.notes = newLead.notes.trim();
+      if (newLead.unitId) payload.unitId = newLead.unitId;
       const response = await supabaseFetch('contact', {
         method: 'POST',
-        body: JSON.stringify({
-          name: newLead.name.trim(),
-          email: newLead.email.trim() || `lead-${Date.now()}@manual.habta.eu`,
-          phone: newLead.phone.trim(),
-          interest: newLead.interest.trim() || 'Lead manual',
-          message: newLead.message.trim() || 'Criado manualmente no admin',
-          projectId: newLead.projectId,
-          origin: newLead.origin,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -894,7 +925,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       }
       toast.success('Lead criado com sucesso');
       setIsCreating(false);
-      setNewLead({ name: '', email: '', phone: '', interest: '', message: '', projectId: '', origin: '' });
+      setNewLead({ name: '', email: '', phone: '', interest: '', message: '', projectId: '', origin: '', classifications: [], desiredLocations: '', maxBudget: '', typology: '', notes: '', unitId: '' });
       onRefresh?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao criar lead');
@@ -1861,7 +1892,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
             background: colors.white,
             borderRadius: radius.xl,
             width: '100%',
-            maxWidth: 520,
+            maxWidth: 560,
             padding: spacing[6],
             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
           }}
@@ -1879,7 +1910,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3], maxHeight: '70vh', overflowY: 'auto', paddingRight: spacing[1] }}>
             <div>
               <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                 Nome <span style={{ color: colors.error }}>*</span>
@@ -1941,31 +1972,134 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
               />
             </div>
 
+            {/* --- Separador: Preferências e classificação --- */}
+            <div style={{ borderTop: `1px solid ${colors.gray[200]}`, marginTop: spacing[1], paddingTop: spacing[3] }}>
+              <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Preferências e classificação
+              </div>
+            </div>
+
+            {/* Classificações */}
+            <div>
+              <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[2] }}>
+                Classificação
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
+                {['Comprador', 'Vendedor', 'Inquilino', 'Arrendatário', 'Consultor'].map((classification) => (
+                  <label
+                    key={classification}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: spacing[2],
+                      padding: `${spacing[2]} ${spacing[3]}`,
+                      border: `2px solid ${newLead.classifications.includes(classification) ? colors.primary : colors.gray[300]}`,
+                      borderRadius: radius.md,
+                      cursor: 'pointer',
+                      background: newLead.classifications.includes(classification) ? designSystem.helpers.hexToRgba(colors.primary, 0.05) : colors.white,
+                      transition: 'all 0.2s',
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      color: newLead.classifications.includes(classification) ? colors.primary : colors.gray[700],
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={newLead.classifications.includes(classification)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewLead({ ...newLead, classifications: [...newLead.classifications, classification] });
+                        } else {
+                          setNewLead({ ...newLead, classifications: newLead.classifications.filter(c => c !== classification) });
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    {classification}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                Origem
+              </label>
+              <select
+                value={newLead.origin}
+                onChange={(e) => setNewLead({ ...newLead, origin: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
+              >
+                <option value="">— Selecionar —</option>
+                {ORIGINS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                Localizações desejadas
+              </label>
+              <input
+                type="text"
+                value={newLead.desiredLocations}
+                onChange={(e) => setNewLead({ ...newLead, desiredLocations: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                placeholder="Ex: Lisboa, Cascais, Porto"
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
+              />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
               <div>
                 <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
-                  Origem
+                  Valor máximo
                 </label>
-                <select
-                  value={newLead.origin}
-                  onChange={(e) => setNewLead({ ...newLead, origin: e.target.value })}
+                <input
+                  type="text"
+                  value={newLead.maxBudget}
+                  onChange={(e) => setNewLead({ ...newLead, maxBudget: e.target.value })}
                   onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
-                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
-                >
-                  <option value="">— Selecionar —</option>
-                  {ORIGINS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
+                  placeholder="Ex: €500.000"
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
+                />
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Tipologia
+                </label>
+                <input
+                  type="text"
+                  value={newLead.typology}
+                  onChange={(e) => setNewLead({ ...newLead, typology: e.target.value })}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                  placeholder="Ex: T1, T2, T3"
+                  style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', transition: 'all 0.2s ease' }}
+                />
+              </div>
+            </div>
+
+            {/* --- Separador: Projeto e pipeline --- */}
+            <div style={{ borderTop: `1px solid ${colors.gray[200]}`, marginTop: spacing[1], paddingTop: spacing[3] }}>
+              <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Projeto e pipeline
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
               <div>
                 <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
                   Projeto (Controlo)
                 </label>
                 <select
                   value={newLead.projectId}
-                  onChange={(e) => setNewLead({ ...newLead, projectId: e.target.value })}
+                  onChange={(e) => setNewLead({ ...newLead, projectId: e.target.value, unitId: '' })}
                   onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
                   style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', background: colors.white, transition: 'all 0.2s ease' }}
@@ -1976,6 +2110,49 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                   ))}
                 </select>
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                  Unidade
+                </label>
+                <select
+                  value={newLead.unitId}
+                  onChange={(e) => setNewLead({ ...newLead, unitId: e.target.value })}
+                  onFocus={(e) => { if (newLead.projectId) { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); } }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                  disabled={!newLead.projectId || createUnits.length === 0}
+                  style={{
+                    width: '100%',
+                    padding: spacing[3],
+                    border: `1px solid ${colors.gray[300]}`,
+                    borderRadius: radius.md,
+                    fontSize: typography.fontSize.base,
+                    outline: 'none',
+                    background: !newLead.projectId ? colors.gray[100] : colors.white,
+                    cursor: !newLead.projectId ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <option value="">— Geral —</option>
+                  {createUnits.map((u) => (
+                    <option key={u.id} value={u.id}>{u.code}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] }}>
+                Mensagem
+              </label>
+              <textarea
+                value={newLead.message}
+                onChange={(e) => setNewLead({ ...newLead, message: e.target.value })}
+                onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
+                placeholder="Mensagem inicial do lead"
+                rows={2}
+                style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'all 0.2s ease' }}
+              />
             </div>
 
             <div>
@@ -1983,12 +2160,12 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 Observações
               </label>
               <textarea
-                value={newLead.message}
-                onChange={(e) => setNewLead({ ...newLead, message: e.target.value })}
+                value={newLead.notes}
+                onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
                 onFocus={(e) => { e.currentTarget.style.borderColor = colors.primary; e.currentTarget.style.boxShadow = '0 0 0 3px ' + designSystem.helpers.hexToRgba(colors.primary, 0.1); }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = colors.gray[300]; e.currentTarget.style.boxShadow = 'none'; }}
-                placeholder="Notas sobre o lead"
-                rows={3}
+                placeholder="Observações importantes sobre o perfil do lead"
+                rows={2}
                 style={{ width: '100%', padding: spacing[3], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.base, outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'all 0.2s ease' }}
               />
             </div>
