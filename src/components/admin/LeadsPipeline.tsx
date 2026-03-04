@@ -196,6 +196,10 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
   const [completingFollowupId, setCompletingFollowupId] = useState<string | null>(null);
   const [completionText, setCompletionText] = useState('');
 
+  // Stage change modal state
+  const [stageChangeInfo, setStageChangeInfo] = useState<{ contactId: string; contactName: string; fromLabel: string; toLabel: string } | null>(null);
+  const [stageChangeComment, setStageChangeComment] = useState('');
+
   // Fetch all pending follow-ups for card badges
   const fetchAllPendingFollowups = React.useCallback(async () => {
     try {
@@ -489,6 +493,14 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     const id = draggingId;
     setDraggingId(null);
 
+    // Capturar estágio anterior
+    const fromStageId = (localStages[id] || contacts.find((c) => c.id === id)?.pipelineStage || 'novo') as PipelineStageId;
+    if (fromStageId === stageId) return; // Sem mudança
+
+    const fromLabel = STAGES.find((s) => s.id === fromStageId)?.label || fromStageId;
+    const toLabel = STAGES.find((s) => s.id === stageId)?.label || stageId;
+    const contactName = contacts.find((c) => c.id === id)?.name || 'Lead';
+
     // Otimismo local
     setLocalStages((prev) => ({ ...prev, [id]: stageId }));
 
@@ -505,7 +517,6 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       if (!response.ok) {
         throw new Error(data?.error || `Falha ao atualizar estágio (HTTP ${response.status})`);
       }
-      toast.success('Estágio do lead atualizado');
       onRefresh?.();
       // persistir localmente também
       try {
@@ -526,6 +537,41 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     } finally {
       setIsSaving(false);
     }
+
+    // Abrir modal para comentário (após atualização otimista)
+    setStageChangeComment('');
+    setStageChangeInfo({ contactId: id, contactName, fromLabel, toLabel });
+  };
+
+  const handleStageChangeConfirm = async (withComment: boolean) => {
+    if (!stageChangeInfo) return;
+    const { contactId, fromLabel, toLabel } = stageChangeInfo;
+    const comment = withComment ? stageChangeComment.trim() : '';
+    const content = comment
+      ? `Pipeline: ${fromLabel} → ${toLabel} — ${comment}`
+      : `Pipeline: ${fromLabel} → ${toLabel}`;
+
+    try {
+      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(contactId))}/activities`, {
+        method: 'POST',
+        body: JSON.stringify({
+          date: new Date().toISOString().slice(0, 10),
+          channel: 'Mensagem',
+          type: 'Pipeline',
+          content,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || `Falha ao criar atividade (HTTP ${response.status})`);
+      }
+      toast.success('Estágio atualizado e atividade registada');
+    } catch {
+      toast.error('Estágio atualizado mas falha ao registar atividade');
+    }
+
+    setStageChangeInfo(null);
+    setStageChangeComment('');
   };
 
   const card = (c: Contact) => (
@@ -1837,6 +1883,98 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                 {isSaving ? 'A criar...' : 'Criar Lead'}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Stage change comment modal */}
+    {stageChangeInfo && (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}
+        onClick={() => handleStageChangeConfirm(false)}
+      >
+        <div
+          style={{
+            background: colors.white,
+            borderRadius: radius.lg,
+            padding: spacing[6],
+            width: '100%',
+            maxWidth: 420,
+            boxShadow: shadows.xl,
+            position: 'relative',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => handleStageChangeConfirm(false)}
+            style={{
+              position: 'absolute',
+              top: spacing[3],
+              right: spacing[3],
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              color: colors.gray[400],
+              padding: '2px',
+            }}
+            aria-label="Fechar"
+          >
+            <X size={18} />
+          </button>
+
+          <p style={{ margin: `0 0 ${spacing[1]}`, fontWeight: typography.fontWeight.semibold, fontSize: typography.fontSize.sm, color: colors.gray[900] }}>
+            Lead {stageChangeInfo.contactName} movido para {stageChangeInfo.toLabel}
+          </p>
+          <p style={{ margin: `0 0 ${spacing[3]}`, fontSize: typography.fontSize.xs, color: colors.gray[500] }}>
+            {stageChangeInfo.fromLabel} → {stageChangeInfo.toLabel}
+          </p>
+
+          <textarea
+            value={stageChangeComment}
+            onChange={(e) => setStageChangeComment(e.target.value)}
+            placeholder="Adicionar comentário (opcional)"
+            rows={3}
+            style={{
+              width: '100%',
+              padding: spacing[2],
+              border: `1px solid ${colors.gray[300]}`,
+              borderRadius: radius.md,
+              fontSize: typography.fontSize.sm,
+              outline: 'none',
+              resize: 'vertical',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+            }}
+            autoFocus
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing[2], marginTop: spacing[3] }}>
+            <button
+              type="button"
+              onClick={() => handleStageChangeConfirm(true)}
+              style={{
+                border: 'none',
+                background: colors.primary,
+                color: colors.white,
+                borderRadius: radius.md,
+                padding: `${spacing[2]} ${spacing[4]}`,
+                cursor: 'pointer',
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.bold,
+              }}
+            >
+              Guardar
+            </button>
           </div>
         </div>
       </div>
