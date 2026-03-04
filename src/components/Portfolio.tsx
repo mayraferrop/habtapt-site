@@ -14,6 +14,7 @@ import { supabaseFetch } from '../utils/supabase/client';
 import { projectsCache, CACHE_KEYS } from '../utils/projectsCache';
 import { PortfolioCard } from './primitives/PortfolioCard';
 import { PortfolioGridSkeleton } from './primitives/PortfolioGridSkeleton';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 type ProjectStatus = 'all' | 'analysis' | 'in-progress' | 'available' | 'sold';
 type InvestmentStrategy = 'buy-hold' | 'fix-flip' | 'alojamento-local' | 'rent-to-rent' | 'desenvolvimento' | 'co-investimento';
@@ -60,7 +61,7 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
   const { ref, isInView } = useInView({ threshold: 0.1 });
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<ProjectStatus>('all');
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
@@ -205,17 +206,6 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
       highlights: 'Terraço privativo de 80m²\\nVistas panorâmicas de Lisboa\\nLocalização premium no Bairro Alto\\nTetos altos (3.5m)\\nLuz natural abundante\\nPotencial para piscina no terraço',
     },
   ], []);
-
-  // Mobile check otimizado
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Fetch projects com cache
   useEffect(() => {
@@ -373,7 +363,6 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveFilter(filter.value)}
                   className="rounded-full transition-all duration-300"
-                  role="button"
                   aria-pressed={activeFilter === filter.value}
                   aria-label={`Filtrar por ${filter.label}`}
                   style={{
@@ -408,48 +397,50 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
           )}
 
           {/* Projects Grid with Skeleton */}
-          {isLoadingProjects ? (
-            <PortfolioGridSkeleton count={6} isMobile={isMobile} />
-          ) : (
-            <AnimatePresence mode="sync">
+          <div aria-live="polite">
+            {isLoadingProjects ? (
+              <PortfolioGridSkeleton count={6} isMobile={isMobile} />
+            ) : (
+              <AnimatePresence mode="sync">
+                <motion.div
+                  key={activeFilter}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  style={{
+                    gap: designSystem.spacing[6],
+                  }}
+                >
+                  {filteredProjects.map((project, index) => (
+                    <PortfolioCard
+                      key={project.id}
+                      project={project}
+                      index={index}
+                      isMobile={isMobile}
+                      onClick={handleProjectClick}
+                    />
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            )}
+
+            {/* Empty state */}
+            {!isLoadingProjects && filteredProjects.length === 0 && (
               <motion.div
-                key={activeFilter}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
                 style={{
-                  gap: designSystem.spacing[6],
+                  textAlign: 'center',
+                  padding: designSystem.spacing[12],
+                  color: designSystem.colors.neutral[600],
                 }}
               >
-                {filteredProjects.map((project, index) => (
-                  <PortfolioCard
-                    key={project.id}
-                    project={project}
-                    index={index}
-                    isMobile={isMobile}
-                    onClick={handleProjectClick}
-                  />
-                ))}
+                <p>Nenhum projeto encontrado para este filtro.</p>
               </motion.div>
-            </AnimatePresence>
-          )}
-
-          {/* Empty state */}
-          {!isLoadingProjects && filteredProjects.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                textAlign: 'center',
-                padding: designSystem.spacing[12],
-                color: designSystem.colors.neutral[600],
-              }}
-            >
-              <p>Nenhum projeto encontrado para este filtro.</p>
-            </motion.div>
-          )}
+            )}
+          </div>
 
           {/* "Ver todos" link — homepage variant */}
           {variant === 'homepage' && !isLoadingProjects && filteredProjects.length > 0 && (

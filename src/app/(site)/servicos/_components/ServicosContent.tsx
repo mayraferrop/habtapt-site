@@ -1,28 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import Link from 'next/link';
 import { Container } from '@/components/Container';
 import { Section } from '@/components/Section';
 import { Search, Hammer, TrendingUp, ArrowRight, CheckCircle, Target, Phone, MessageCircle } from '@/components/icons';
 import { motion } from 'motion/react';
 import { useInView } from '@/components/useInView';
 import { designSystem } from '@/components/design-system';
-import { useRouter } from 'next/navigation';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 export default function ServicosContent() {
   const { ref, isInView } = useInView({ threshold: 0.1 });
-  const router = useRouter();
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const services = [
     {
@@ -361,24 +351,24 @@ export default function ServicosContent() {
                 Conheça o nosso processo completo em 7 etapas e entenda como transformamos cada fase em resultado.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.button
-                  onClick={() => router.push('/contacto')}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-3 px-10 py-5 rounded-full transition-all duration-300"
-                  style={{
-                    background: designSystem.colors.neutral.white,
-                    color: designSystem.colors.brand.primary,
-                    fontWeight: designSystem.typography.fontWeight.semibold,
-                    fontSize: designSystem.typography.fontSize.base,
-                    boxShadow: designSystem.shadows.xl,
-                    cursor: 'pointer',
-                    border: 'none',
-                  }}
-                >
-                  <Phone size={20} />
-                  Agendar Reunião
-                </motion.button>
+                <Link href="/contacto" style={{ textDecoration: 'none' }}>
+                  <motion.span
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="inline-flex items-center gap-3 px-10 py-5 rounded-full transition-all duration-300"
+                    style={{
+                      background: designSystem.colors.neutral.white,
+                      color: designSystem.colors.brand.primary,
+                      fontWeight: designSystem.typography.fontWeight.semibold,
+                      fontSize: designSystem.typography.fontSize.base,
+                      boxShadow: designSystem.shadows.xl,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Phone size={20} />
+                    Agendar Reunião
+                  </motion.span>
+                </Link>
 
                 <motion.button
                   onClick={handleWhatsApp}
@@ -401,41 +391,37 @@ export default function ServicosContent() {
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <motion.button
-                    onClick={() => router.push('/processo')}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                    style={{
-                      fontSize: designSystem.typography.fontSize.sm,
-                      fontWeight: designSystem.typography.fontWeight.medium,
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Ver o Nosso Processo
-                    <ArrowRight size={16} />
-                  </motion.button>
+                  <Link href="/processo" className="text-white/90 hover:text-white transition-colors" style={{ textDecoration: 'none' }}>
+                    <motion.span
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="inline-flex items-center gap-2"
+                      style={{
+                        fontSize: designSystem.typography.fontSize.sm,
+                        fontWeight: designSystem.typography.fontWeight.medium,
+                      }}
+                    >
+                      Ver o Nosso Processo
+                      <ArrowRight size={16} />
+                    </motion.span>
+                  </Link>
 
                   <span className="hidden sm:block text-white/40">&bull;</span>
 
-                  <motion.button
-                    onClick={() => router.push('/portfolio')}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                    style={{
-                      fontSize: designSystem.typography.fontSize.sm,
-                      fontWeight: designSystem.typography.fontWeight.medium,
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Ver Projetos
-                    <TrendingUp size={16} />
-                  </motion.button>
+                  <Link href="/portfolio" className="text-white/90 hover:text-white transition-colors" style={{ textDecoration: 'none' }}>
+                    <motion.span
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="inline-flex items-center gap-2"
+                      style={{
+                        fontSize: designSystem.typography.fontSize.sm,
+                        fontWeight: designSystem.typography.fontWeight.medium,
+                      }}
+                    >
+                      Ver Projetos
+                      <TrendingUp size={16} />
+                    </motion.span>
+                  </Link>
                 </div>
               </div>
             </div>

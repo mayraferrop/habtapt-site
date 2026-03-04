@@ -139,16 +139,6 @@ export function Contact() {
     }
   };
 
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = designSystem.colors.brand.secondary;
-    e.target.style.boxShadow = designSystem.shadows.focus;
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2);
-    e.target.style.boxShadow = 'none';
-  };
-
   const contactInfo = [
     {
       icon: Mail,
@@ -201,6 +191,13 @@ export function Contact() {
 
   return (
     <Section id="contact" background="muted">
+      <style>{`
+        .habta-input:focus-visible {
+          border-color: ${designSystem.colors.brand.primary} !important;
+          box-shadow: 0 0 0 3px rgba(26,62,92,0.15) !important;
+          outline: none;
+        }
+      `}</style>
       <Container>
         <motion.div
           ref={ref}
@@ -293,15 +290,13 @@ export function Contact() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
                   aria-required="true"
                   aria-invalid={formErrors.name ? 'true' : 'false'}
                   aria-describedby={formErrors.name ? 'name-error' : undefined}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
+                  className="habta-input w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
                   style={{
-                    borderColor: formErrors.name 
-                      ? designSystem.colors.semantic.error 
+                    borderColor: formErrors.name
+                      ? designSystem.colors.semantic.error
                       : designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2),
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,
@@ -343,15 +338,13 @@ export function Contact() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
                   aria-required="true"
                   aria-invalid={formErrors.email ? 'true' : 'false'}
                   aria-describedby={formErrors.email ? 'email-error' : undefined}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
+                  className="habta-input w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
                   style={{
-                    borderColor: formErrors.email 
-                      ? designSystem.colors.semantic.error 
+                    borderColor: formErrors.email
+                      ? designSystem.colors.semantic.error
                       : designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2),
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,
@@ -393,15 +386,13 @@ export function Contact() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
                   aria-required="true"
                   aria-invalid={formErrors.phone ? 'true' : 'false'}
                   aria-describedby={formErrors.phone ? 'phone-error' : undefined}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
+                  className="habta-input w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none"
                   style={{
-                    borderColor: formErrors.phone 
-                      ? designSystem.colors.semantic.error 
+                    borderColor: formErrors.phone
+                      ? designSystem.colors.semantic.error
                       : designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2),
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,
@@ -442,15 +433,13 @@ export function Contact() {
                   name="interest"
                   value={formData.interest}
                   onChange={handleChange}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
                   aria-required="true"
                   aria-invalid={formErrors.interest ? 'true' : 'false'}
                   aria-describedby={formErrors.interest ? 'interest-error' : undefined}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none appearance-none bg-white"
+                  className="habta-input w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none appearance-none bg-white"
                   style={{
-                    borderColor: formErrors.interest 
-                      ? designSystem.colors.semantic.error 
+                    borderColor: formErrors.interest
+                      ? designSystem.colors.semantic.error
                       : designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2),
                     color: formData.interest ? designSystem.colors.brand.primary : designSystem.colors.neutral[500],
                     backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7C93' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
@@ -500,16 +489,14 @@ export function Contact() {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
                   rows={5}
                   aria-required="true"
                   aria-invalid={formErrors.message ? 'true' : 'false'}
                   aria-describedby={formErrors.message ? 'message-error' : undefined}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none resize-none"
+                  className="habta-input w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none resize-none"
                   style={{
-                    borderColor: formErrors.message 
-                      ? designSystem.colors.semantic.error 
+                    borderColor: formErrors.message
+                      ? designSystem.colors.semantic.error
                       : designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.2),
                     background: designSystem.colors.neutral.white,
                     color: designSystem.colors.brand.primary,

@@ -135,7 +135,6 @@ function PortfolioCardComponent({ project, index, isMobile, viewMode = 'investir
         href={`/portfolio/${project.id}`}
         className="absolute inset-0 z-[1]"
         aria-label={`Ver detalhes de ${project.title}`}
-        tabIndex={0}
       >
         <span className="sr-only">Ver detalhes de {project.title}</span>
       </Link>

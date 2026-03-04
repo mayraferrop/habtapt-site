@@ -1,28 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import Link from 'next/link';
 import { Container } from '@/components/Container';
 import { Section } from '@/components/Section';
 import { Search, ClipboardCheck, Building2, Hammer, Camera, TrendingUp, DollarSign, ArrowRight, Workflow } from '@/components/icons';
 import { motion } from 'motion/react';
 import { useInView } from '@/components/useInView';
 import { designSystem } from '@/components/design-system';
-import { useRouter } from 'next/navigation';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 export default function ProcessoContent() {
   const { ref, isInView } = useInView({ threshold: 0.1 });
-  const router = useRouter();
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const steps = [
     {
@@ -117,12 +107,12 @@ export default function ProcessoContent() {
                 border: `1px solid ${designSystem.helpers.hexToRgba(designSystem.colors.brand.secondary, 0.15)}`,
               }}
             >
-              <Workflow size={18} style={{ color: designSystem.colors.brand.secondary }} />
+              <Workflow size={18} style={{ color: designSystem.colors.brand.secondaryDark }} />
               <span
                 style={{
                   fontSize: designSystem.typography.fontSize.sm,
                   fontWeight: designSystem.typography.fontWeight.semibold,
-                  color: designSystem.colors.brand.secondary,
+                  color: designSystem.colors.brand.secondaryDark,
                   textTransform: 'uppercase',
                   letterSpacing: designSystem.typography.letterSpacing.wider,
                 }}
@@ -141,7 +131,7 @@ export default function ProcessoContent() {
                 lineHeight: designSystem.typography.lineHeight.tight,
               }}
             >
-              O Nosso Processo
+              7 Etapas para o Retorno
             </h1>
 
             <p
@@ -264,24 +254,24 @@ export default function ProcessoContent() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="text-center mt-16"
           >
-            <motion.button
-              onClick={() => router.push('/portfolio')}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-3 px-10 py-5 rounded-full transition-all duration-300"
-              style={{
-                background: designSystem.colors.gradients.secondary,
-                color: designSystem.colors.neutral.white,
-                fontWeight: designSystem.typography.fontWeight.semibold,
-                fontSize: designSystem.typography.fontSize['17'],
-                boxShadow: designSystem.shadows.secondaryHover,
-                cursor: 'pointer',
-                border: 'none',
-              }}
-            >
-              Ver Projetos
-              <ArrowRight size={20} />
-            </motion.button>
+            <Link href="/portfolio" style={{ textDecoration: 'none' }}>
+              <motion.span
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center gap-3 px-10 py-5 rounded-full transition-all duration-300"
+                style={{
+                  background: designSystem.colors.gradients.secondary,
+                  color: designSystem.colors.neutral.white,
+                  fontWeight: designSystem.typography.fontWeight.semibold,
+                  fontSize: designSystem.typography.fontSize['17'],
+                  boxShadow: designSystem.shadows.secondaryHover,
+                  cursor: 'pointer',
+                }}
+              >
+                Ver Projetos
+                <ArrowRight size={20} />
+              </motion.span>
+            </Link>
           </motion.div>
         </Container>
       </Section>

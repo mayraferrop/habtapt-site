@@ -12,6 +12,8 @@ const stats = [
 export function CredibilityBar() {
   return (
     <section
+      role="region"
+      aria-label="Credenciais HABTA"
       style={{
         background: designSystem.colors.gradients.heroLuxury,
         paddingTop: designSystem.spacing[12],
@@ -19,6 +21,21 @@ export function CredibilityBar() {
       }}
     >
       <Container>
+        <h2
+          style={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: 0,
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
+        >
+          Indicadores de credibilidade
+        </h2>
         <div
           className="grid grid-cols-1 sm:grid-cols-3"
           style={{

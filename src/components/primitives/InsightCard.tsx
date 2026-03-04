@@ -3,7 +3,7 @@
  * Seguindo Guardião Universal de Front-End
  */
 
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Clock } from '../icons';
 import { designSystem } from '../design-system';
@@ -29,6 +29,16 @@ function InsightCardComponent({ insight, index, isMobile, onClick }: InsightCard
   const cardGradient = insight.gradient || designSystem.colors.gradients.primary;
   const iconColor = insight.iconColor || designSystem.colors.brand.primary;
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick(insight.id);
+      }
+    },
+    [onClick, insight.id]
+  );
+
   const CardWrapper = isMobile ? 'div' : motion.div;
   const cardProps = isMobile
     ? {}
@@ -42,13 +52,17 @@ function InsightCardComponent({ insight, index, isMobile, onClick }: InsightCard
   return (
     <CardWrapper
       {...cardProps}
-      className="group bg-white overflow-hidden transition-all duration-500 cursor-pointer"
+      className="group bg-white overflow-hidden transition-all duration-500 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#1A3E5C] focus-visible:ring-offset-2"
+      role="link"
+      tabIndex={0}
       onClick={() => onClick(insight.id)}
+      onKeyDown={handleKeyDown}
       style={{
         borderRadius: designSystem.borderRadius['2xl'],
         border: `1px solid ${designSystem.colors.neutral[200]}`,
         padding: designSystem.spacing[6],
         boxShadow: designSystem.shadows.sm,
+        outline: 'none',
       }}
     >
       {/* Icon */}

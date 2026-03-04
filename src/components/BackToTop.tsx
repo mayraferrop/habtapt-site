@@ -47,8 +47,9 @@ export function BackToTop() {
             boxShadow: '0 8px 32px rgba(26, 62, 92, 0.25)'
           }}
           whileTap={{ scale: 0.9 }}
-          className="fixed bottom-6 left-6 z-50 flex items-center justify-center w-14 h-14 rounded-full"
+          className="fixed bottom-6 left-6 flex items-center justify-center w-14 h-14 rounded-full"
           style={{
+            zIndex: designSystem.zIndex.sticky,
             background: designSystem.colors.gradients.primary,
             boxShadow: '0 4px 20px rgba(26, 62, 92, 0.2)',
           }}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, X } from './icons';
+import { MessageSquare } from './icons';
 import { motion, AnimatePresence } from 'motion/react';
 import { designSystem } from './design-system';
 
@@ -13,8 +13,8 @@ const NOTIFICATION_RED = designSystem.colors.external.notificationRed;
 export function WhatsAppButton() {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPulse, setShowPulse] = useState(true);
 
-  // WhatsApp number
   const whatsappNumber = '351963290394';
   const message = 'Olá! Gostaria de saber mais sobre investimentos imobiliários com a HABTA.';
 
@@ -32,7 +32,17 @@ export function WhatsAppButton() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!isVisible || !showPulse) return;
+    const timer = setTimeout(() => setShowPulse(false), 4500);
+    return () => clearTimeout(timer);
+  }, [isVisible, showPulse]);
+
   const handleClick = () => {
+    if (!isExpanded) {
+      setIsExpanded(true);
+      return;
+    }
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -119,7 +129,7 @@ export function WhatsAppButton() {
 
             {/* Main Button */}
             <motion.button
-              whileHover={{ scale: 1.15, rotate: 5 }}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onHoverStart={() => setIsExpanded(true)}
               onHoverEnd={() => setIsExpanded(false)}
@@ -133,22 +143,23 @@ export function WhatsAppButton() {
               }}
               aria-label="Falar conosco pelo WhatsApp"
             >
-              {/* Pulse Animation */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.5, 0, 0.5],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: WHATSAPP_PRIMARY,
-                }}
-              />
+              {showPulse && (
+                <motion.div
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.5, 0, 0.5],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: 2,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: WHATSAPP_PRIMARY,
+                  }}
+                />
+              )}
 
               {/* Icon */}
               <MessageSquare size={30} className="text-white relative z-10" />

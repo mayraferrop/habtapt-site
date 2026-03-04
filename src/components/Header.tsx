@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, MessageCircle } from './icons';
@@ -10,6 +10,7 @@ import { designSystem } from './design-system';
 
 const navItems = [
   { label: 'Início', href: '/' },
+  { label: 'Serviços', href: '/servicos' },
   { label: 'Imóveis', href: '/imoveis' },
   { label: 'VELASK', href: '/velask' },
   { label: 'Portfolio', href: '/portfolio' },
@@ -21,6 +22,8 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const isHome = pathname === '/';
 
@@ -43,6 +46,40 @@ export function Header() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+    menuButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeMobileMenu();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const menu = mobileMenuRef.current;
+        if (!menu) return;
+        const focusable = menu.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen, closeMobileMenu]);
 
   const showSolid = isScrolled || !isHome;
 
@@ -98,7 +135,6 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  aria-label={`Navegar para ${item.label}`}
                   aria-current={isActive ? 'page' : undefined}
                   style={{ textDecoration: 'none' }}
                 >
@@ -168,6 +204,7 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
+            ref={menuButtonRef}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden active:scale-90 transition-transform"
             aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
@@ -195,8 +232,11 @@ export function Header() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div
+          ref={mobileMenuRef}
           className="lg:hidden anim-fade-in"
           id="mobile-menu"
+          role="dialog"
+          aria-label="Menu de navegação"
           style={{
             background: designSystem.helpers.hexToRgba(designSystem.colors.neutral.white, 0.95),
             backdropFilter: 'blur(16px)',

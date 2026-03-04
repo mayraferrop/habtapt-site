@@ -9,6 +9,7 @@ import { useInView } from './useInView';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { designSystem } from './design-system';
 import { supabaseFetch } from '../utils/supabase/client';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 interface Testimonial {
   id: string;
@@ -56,7 +57,7 @@ const fallbackTestimonials: Testimonial[] = [
 
 export function Testimonials() {
   const { ref, isInView } = useInView({ threshold: 0.1 });
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -88,15 +89,6 @@ export function Testimonials() {
     fetchTestimonials();
   }, []);
 
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   return (
     <Section id="testimonials" background="white">
@@ -166,10 +158,82 @@ export function Testimonials() {
 
         {/* Testimonials Grid */}
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: designSystem.spacing[12] }}>
-            <p style={{ color: designSystem.colors.neutral[600] }}>
-              Carregando depoimentos...
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="relative bg-white rounded-3xl p-8 border"
+                style={{
+                  border: `1px solid ${designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.1)}`,
+                  boxShadow: designSystem.shadows.md,
+                }}
+              >
+                <div
+                  style={{
+                    width: '3rem',
+                    height: '3rem',
+                    borderRadius: designSystem.borderRadius.xl,
+                    background: designSystem.colors.neutral[200],
+                    marginBottom: designSystem.spacing[4],
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+                <div className="flex gap-1 mb-4">
+                  {[0, 1, 2, 3, 4].map((s) => (
+                    <div
+                      key={`star-${i}-${s}`}
+                      style={{
+                        width: '1.125rem',
+                        height: '1.125rem',
+                        borderRadius: '2px',
+                        background: designSystem.colors.neutral[200],
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ marginBottom: designSystem.spacing[6] }}>
+                  {[0, 1, 2].map((l) => (
+                    <div
+                      key={`line-${i}-${l}`}
+                      style={{
+                        height: '0.875rem',
+                        borderRadius: '4px',
+                        background: designSystem.colors.neutral[200],
+                        marginBottom: designSystem.spacing[2],
+                        width: l === 2 ? '60%' : '100%',
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div
+                  className="flex items-center gap-4 pt-6 border-t"
+                  style={{ borderColor: designSystem.helpers.hexToRgba(designSystem.colors.brand.primary, 0.1) }}
+                >
+                  <div
+                    style={{
+                      width: '3.5rem',
+                      height: '3.5rem',
+                      borderRadius: '9999px',
+                      background: designSystem.colors.neutral[200],
+                      flexShrink: 0,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: '0.875rem', width: '70%', borderRadius: '4px', background: designSystem.colors.neutral[200], marginBottom: designSystem.spacing[1], animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ height: '0.75rem', width: '50%', borderRadius: '4px', background: designSystem.colors.neutral[200], animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.4; }
+              }
+            `}</style>
           </div>
         ) : testimonials.length === 0 ? (
           <div style={{ textAlign: 'center', padding: designSystem.spacing[12] }}>
@@ -190,7 +254,7 @@ export function Testimonials() {
             
             return (
             <CardWrapper
-              key={testimonial.name}
+              key={testimonial.id}
               {...cardProps}
               className="relative bg-white rounded-3xl p-8 border transition-[transform,box-shadow] duration-500"
               role="article"
@@ -264,6 +328,7 @@ export function Testimonials() {
                       viewBox="0 0 10 8"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
                     >
                       <path
                         d="M1 4L3.5 6.5L9 1"

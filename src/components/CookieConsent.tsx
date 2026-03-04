@@ -78,7 +78,7 @@ export function CookieConsent() {
               <p
                 style={{
                   fontSize: designSystem.typography.fontSize.sm,
-                  color: designSystem.colors.neutral.gray700,
+                  color: designSystem.colors.neutral[700],
                   lineHeight: designSystem.typography.lineHeight.relaxed,
                   margin: 0,
                 }}
@@ -93,7 +93,7 @@ export function CookieConsent() {
                     fontWeight: designSystem.typography.fontWeight.semibold,
                   }}
                 >
-                  Politica de Cookies
+                  Política de Cookies
                 </Link>{' '}
                 e{' '}
                 <Link
@@ -104,7 +104,7 @@ export function CookieConsent() {
                     fontWeight: designSystem.typography.fontWeight.semibold,
                   }}
                 >
-                  Politica de Privacidade
+                  Política de Privacidade
                 </Link>.
               </p>
             </div>
@@ -122,13 +122,28 @@ export function CookieConsent() {
                 onClick={handleReject}
                 style={{
                   padding: `${designSystem.spacing[2]} ${designSystem.spacing[4]}`,
-                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                  border: `1px solid ${designSystem.colors.neutral[300]}`,
                   background: designSystem.colors.neutral.white,
-                  color: designSystem.colors.neutral.gray700,
+                  color: designSystem.colors.neutral[700],
                   borderRadius: designSystem.borderRadius.lg,
                   fontSize: designSystem.typography.fontSize.sm,
                   fontWeight: designSystem.typography.fontWeight.medium,
                   cursor: 'pointer',
+                  transition: designSystem.animations.transition.fast,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = designSystem.colors.neutral[100];
+                  e.currentTarget.style.borderColor = designSystem.colors.neutral[400];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = designSystem.colors.neutral.white;
+                  e.currentTarget.style.borderColor = designSystem.colors.neutral[300];
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,62,92,0.15)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 Rejeitar
@@ -144,6 +159,22 @@ export function CookieConsent() {
                   fontSize: designSystem.typography.fontSize.sm,
                   fontWeight: designSystem.typography.fontWeight.bold,
                   cursor: 'pointer',
+                  transition: designSystem.animations.transition.fast,
+                  boxShadow: designSystem.shadows.md,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = designSystem.colors.brand.primaryHover;
+                  e.currentTarget.style.boxShadow = designSystem.shadows.primaryHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = designSystem.colors.brand.primary;
+                  e.currentTarget.style.boxShadow = designSystem.shadows.md;
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = `${designSystem.shadows.md}, 0 0 0 3px rgba(26,62,92,0.15)`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = designSystem.shadows.md;
                 }}
               >
                 Aceitar

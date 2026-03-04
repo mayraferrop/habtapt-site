@@ -1,26 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Container } from './Container';
 import { Section } from './Section';
 import { FileSearch, ClipboardCheck, Hammer, Sparkles, Camera, TrendingUp, DollarSign, Workflow } from './icons';
 import { motion } from 'motion/react';
 import { useInView } from './useInView';
 import { designSystem } from './design-system';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 export function Process() {
   const { ref, isInView } = useInView({ threshold: 0.05 });
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const steps = [
     {

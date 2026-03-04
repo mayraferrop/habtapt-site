@@ -17,7 +17,6 @@ const links = {
   recursos: [
     { label: 'Insights', href: '/blog' },
     { label: 'Depoimentos', href: '/#depoimentos' },
-    { label: 'Painel Admin', href: '/login' },
   ],
   legal: [
     { label: 'Política de Privacidade', href: '/privacidade' },
@@ -106,7 +105,6 @@ export function Footer() {
                       <Link
                         href={link.href}
                         className="text-white/80 hover:text-white transition-colors duration-200 inline-flex items-center"
-                        aria-label={`Navegar para ${link.label}`}
                         style={{ textDecoration: 'none', font: 'inherit', minHeight: '44px' }}
                       >
                         {link.label}

@@ -14,6 +14,7 @@ import { supabaseFetch } from '../utils/supabase/client';
 import { projectsCache, CACHE_KEYS } from '../utils/projectsCache';
 import { InsightCard } from './primitives/InsightCard';
 import { InsightsGridSkeleton } from './primitives/InsightsGridSkeleton';
+import { useIsMobile } from '@/utils/hooks/useIsMobile';
 
 interface Insight {
   id: string;
@@ -29,7 +30,7 @@ interface Insight {
 export function Insights() {
   const { ref, isInView } = useInView({ threshold: 0.1 });
   const router = useRouter();
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
   const [articles, setArticles] = useState<Insight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,17 +75,6 @@ export function Insights() {
     ],
     []
   );
-
-  // Mobile check otimizado
-  useEffect(() => {
-    const lgBreakpoint = parseInt(designSystem.breakpoints.lg);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < lgBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Fetch insights com cache
   useEffect(() => {

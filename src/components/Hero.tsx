@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Container } from './Container';
 import { ArrowRight } from './icons';
 import { designSystem } from './design-system';
@@ -18,22 +19,13 @@ export function Hero() {
     >
       {/* Background Image — static, no JS needed */}
       <div className="absolute inset-0">
-        <img
-          src="/images/hero/hero-1080.avif"
-          srcSet={[
-            '/images/hero/hero-480.avif 480w',
-            '/images/hero/hero-768.avif 768w',
-            '/images/hero/hero-1080.avif 1080w',
-            '/images/hero/hero-1600.avif 1600w',
-          ].join(', ')}
+        <Image
+          src="/images/hero/hero-1600.avif"
+          alt="VELASK Residence - fachada do empreendimento"
+          fill
+          priority
           sizes="100vw"
-          alt=""
-          aria-hidden="true"
-          width={1920}
-          height={1280}
-          fetchPriority="high"
-          decoding="async"
-          className="w-full h-full object-cover"
+          className="object-cover"
           style={{ minHeight: '110%' }}
         />
         <div
