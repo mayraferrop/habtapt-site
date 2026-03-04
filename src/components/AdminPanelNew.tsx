@@ -174,6 +174,7 @@ export function AdminPanel() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [testimonialsCount, setTestimonialsCount] = useState(0);
+  const [unitsCount, setUnitsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -290,12 +291,25 @@ export function AdminPanel() {
     }
   };
 
+  const fetchUnitsCount = async () => {
+    try {
+      const response = await supabaseFetch('units', { method: 'GET' }, 1, true);
+      if (response.ok) {
+        const data = await response.json();
+        setUnitsCount(data.count || 0);
+      }
+    } catch {
+      // Silently fail - count stays at 0
+    }
+  };
+
   useEffect(() => {
     fetchContacts();
     fetchSubscribers();
     fetchProjects();
     fetchInsights();
     fetchTestimonialsCount();
+    fetchUnitsCount();
   }, []);
 
   // Filtered and sorted data
@@ -539,7 +553,7 @@ export function AdminPanel() {
             { id: 'leads' as const, label: 'Leads', icon: Users, count: contacts.length },
             { id: 'subscribers' as const, label: 'Newsletter', icon: Inbox, count: subscribers.length },
             { id: 'projects' as const, label: 'Projetos', icon: Building2, count: projects.length },
-            { id: 'units' as const, label: 'Unidades', icon: Home, count: 0 },
+            { id: 'units' as const, label: 'Unidades', icon: Home, count: unitsCount },
             { id: 'insights' as const, label: 'Insights', icon: BookOpen, count: insights.length },
             { id: 'testimonials' as const, label: 'Depoimentos', icon: MessageSquare, count: testimonialsCount },
             { id: 'controlo' as const, label: 'Controlo', icon: BarChart3, count: 0 },
@@ -831,7 +845,7 @@ export function AdminPanel() {
               ) : activeTab === 'projects' ? (
                 <ProjectsManager projects={projects} onRefresh={fetchProjects} isLoading={isLoading} />
               ) : activeTab === 'units' ? (
-                <UnitsManager />
+                <UnitsManager onRefresh={fetchUnitsCount} />
               ) : activeTab === 'insights' ? (
                 <InsightsManager insights={insights} onRefresh={fetchInsights} isLoading={isLoading} />
               ) : activeTab === 'testimonials' ? (
