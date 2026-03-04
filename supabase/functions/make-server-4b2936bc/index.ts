@@ -46,6 +46,10 @@ app.post("/make-server-4b2936bc/contact", async (c) => {
     const timestamp = Date.now();
     const contactId = `contact:${timestamp}`;
 
+    // Calculate leadNumber
+    const allContacts = await kv.getByPrefix("contact:");
+    const leadNumber = allContacts.length + 1;
+
     const contactData = {
       id: contactId,
       name,
@@ -55,6 +59,7 @@ app.post("/make-server-4b2936bc/contact", async (c) => {
       message,
       projectId: projectId || '',
       origin: origin || '',
+      leadNumber,
       createdAt: new Date().toISOString(),
       timestamp,
     };
@@ -132,7 +137,24 @@ app.get("/make-server-4b2936bc/contacts", async (c) => {
     const contacts = await kv.getByPrefix("contact:");
     const sortedContacts = contacts.sort((a: any, b: any) => b.timestamp - a.timestamp);
     console.log(`Retrieved ${contacts.length} contacts`);
-    // Garantir campo de estágio padrão para pipeline de leads
+
+    // Backfill leadNumber for old contacts that don't have one
+    // Sort by timestamp ascending (oldest first) for sequential numbering
+    const byTimestampAsc = [...contacts].sort((a: any, b: any) => (a.timestamp || 0) - (b.timestamp || 0));
+    const needsBackfill = byTimestampAsc.some((c: any) => !c.leadNumber);
+    if (needsBackfill) {
+      let nextNumber = 1;
+      for (const ct of byTimestampAsc) {
+        if (!(ct as any).leadNumber) {
+          (ct as any).leadNumber = nextNumber;
+          await kv.set((ct as any).id, ct);
+          console.log(`Backfilled leadNumber=${nextNumber} for ${(ct as any).id}`);
+        }
+        nextNumber = Math.max(nextNumber, (ct as any).leadNumber) + 1;
+      }
+    }
+
+    // Re-sort newest first for response, ensure stage default
     const withStage = sortedContacts.map((c: any) => ({
       ...c,
       pipelineStage: c.pipelineStage || 'novo',
@@ -851,6 +873,311 @@ app.post("/make-server-4b2936bc/projects/migrate-status", async (c) => {
   } catch (error) {
     console.log(`[Migration] ❌ Error: ${error}`);
     return c.json({ error: "Erro na migração. Tente novamente." }, 500);
+  }
+});
+
+// ============================================
+// UNITS CRUD ENDPOINTS
+// ============================================
+
+// Get all units (optionally filtered by project_id, status, typology)
+app.get("/make-server-4b2936bc/units", async (c) => {
+  try {
+    const units = await kv.getByPrefix("unit:");
+    const isAdmin = c.req.header("x-admin-request") === "true";
+    const projectId = c.req.query("project_id");
+    const status = c.req.query("status");
+    const typology = c.req.query("typology");
+
+    let filtered = units as any[];
+
+    // Public only sees published units
+    if (!isAdmin) {
+      filtered = filtered.filter((u: any) => u.published !== false);
+    }
+
+    if (projectId) {
+      filtered = filtered.filter((u: any) => u.projectId === projectId);
+    }
+    if (status) {
+      filtered = filtered.filter((u: any) => u.status === status);
+    }
+    if (typology) {
+      filtered = filtered.filter((u: any) => u.typology === typology);
+    }
+
+    const sorted = filtered.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    console.log(`Retrieved ${sorted.length} units (total ${units.length})`);
+    return c.json({ success: true, units: sorted, count: sorted.length });
+  } catch (error) {
+    console.log(`Error retrieving units: ${error}`);
+    return c.json({ error: "Erro ao buscar unidades" }, 500);
+  }
+});
+
+// Get single unit by ID
+app.get("/make-server-4b2936bc/units/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const unitKey = `unit:${id}`;
+    const unit = await kv.get(unitKey);
+
+    if (!unit) {
+      console.log(`Unit not found: ${id}`);
+      return c.json({ error: "Unidade não encontrada" }, 404);
+    }
+
+    console.log(`Retrieved unit: ${id}`);
+    return c.json({ success: true, unit });
+  } catch (error) {
+    console.log(`Error retrieving unit: ${error}`);
+    return c.json({ error: "Erro ao buscar unidade" }, 500);
+  }
+});
+
+// Create new unit
+app.post("/make-server-4b2936bc/units", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { title } = body;
+
+    if (!title) {
+      return c.json({ error: "Título é obrigatório" }, 400);
+    }
+
+    const timestamp = Date.now();
+    const unitId = `${timestamp}`;
+    const unitKey = `unit:${unitId}`;
+
+    const unitData = {
+      id: unitId,
+      projectId: body.projectId || null,
+      title,
+      slug: body.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      unitRef: body.unitRef || '',
+      description: body.description || '',
+      typology: body.typology || '',
+      grossArea: body.grossArea || null,
+      usefulArea: body.usefulArea || null,
+      outdoorArea: body.outdoorArea || null,
+      floor: body.floor || '',
+      orientation: body.orientation || '',
+      energyCert: body.energyCert || '',
+      bedrooms: body.bedrooms || 0,
+      bathrooms: body.bathrooms || 0,
+      price: body.price || null,
+      priceLabel: body.priceLabel || '',
+      status: body.status || 'available',
+      portalUrl: body.portalUrl || null,
+      brochureUrl: body.brochureUrl || null,
+      deliveryDate: body.deliveryDate || '',
+      imageUrl: body.imageUrl || '',
+      images: body.images || [],
+      floorPlanUrl: body.floorPlanUrl || '',
+      specs: body.specs || {},
+      highlights: body.highlights || [],
+      published: body.published !== false,
+      displayOrder: body.displayOrder || 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      timestamp,
+    };
+
+    await kv.set(unitKey, unitData);
+    console.log(`Unit created successfully: ${unitId} - ${title}`);
+
+    return c.json({
+      success: true,
+      message: "Unidade criada com sucesso!",
+      unit: unitData,
+    });
+  } catch (error) {
+    console.log(`Unit creation error: ${error}`);
+    return c.json({ error: "Erro ao criar unidade. Tente novamente." }, 500);
+  }
+});
+
+// Update existing unit
+app.put("/make-server-4b2936bc/units/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const unitKey = `unit:${id}`;
+
+    const existing = await kv.get(unitKey);
+    if (!existing) {
+      return c.json({ error: "Unidade não encontrada" }, 404);
+    }
+
+    const body = await c.req.json();
+    const updated = {
+      ...(existing as any),
+      ...body,
+      id, // Prevent ID override
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(unitKey, updated);
+    console.log(`Unit updated: ${id}`);
+
+    return c.json({
+      success: true,
+      message: "Unidade atualizada com sucesso!",
+      unit: updated,
+    });
+  } catch (error) {
+    console.log(`Unit update error: ${error}`);
+    return c.json({ error: "Erro ao atualizar unidade. Tente novamente." }, 500);
+  }
+});
+
+// Delete unit
+app.delete("/make-server-4b2936bc/units/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const unitKey = `unit:${id}`;
+
+    const existing = await kv.get(unitKey);
+    if (!existing) {
+      return c.json({ error: "Unidade não encontrada" }, 404);
+    }
+
+    await kv.del(unitKey);
+    console.log(`Unit deleted: ${id}`);
+
+    return c.json({ success: true, message: "Unidade eliminada com sucesso!" });
+  } catch (error) {
+    console.log(`Unit delete error: ${error}`);
+    return c.json({ error: "Erro ao eliminar unidade. Tente novamente." }, 500);
+  }
+});
+
+// Seed Velask units
+app.post("/make-server-4b2936bc/units/seed", async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const projectId = body.projectId || null;
+
+    const velaskUnits = [
+      {
+        title: 'T1 Garden Garage',
+        slug: 't1-garden-garage',
+        unitRef: 'Fracção A',
+        description: 'Jardim amplo + garagem privativa: a solução "casa" dentro da cidade.',
+        typology: 'T1',
+        grossArea: 118.44,
+        usefulArea: 69.60,
+        outdoorArea: 34.06,
+        floor: 'R/C',
+        orientation: '',
+        energyCert: '',
+        bedrooms: 1,
+        bathrooms: 2,
+        price: 399000,
+        priceLabel: '€399.000',
+        status: 'available',
+        deliveryDate: 'Abril 2026',
+        specs: {
+          'Interior': '69,60 m²',
+          'Pátio': '6,26 m²',
+          'Jardim': '27,80 m²',
+          'Garagem': '14,78 m²',
+        },
+        highlights: ['Jardim privativo', 'Garagem'],
+        displayOrder: 1,
+      },
+      {
+        title: 'T2 Garden Annex',
+        slug: 't2-garden-annex',
+        unitRef: 'Fracção B',
+        description: 'Dois quartos, exterior completo e um anexo que dá flexibilidade (arrumos/office/…).',
+        typology: 'T2',
+        grossArea: 106.78,
+        usefulArea: 66.30,
+        outdoorArea: 33.11,
+        floor: 'Piso 1',
+        orientation: '',
+        energyCert: '',
+        bedrooms: 2,
+        bathrooms: 2,
+        price: 419000,
+        priceLabel: '€419.000',
+        status: 'available',
+        deliveryDate: 'Abril 2026',
+        specs: {
+          'Interior': '66,30 m²',
+          'Exterior': '33,11 m²',
+          'Anexo': '7,37 m²',
+          'Jardim': '23,85 m²',
+        },
+        highlights: ['Jardim', 'Anexo'],
+        displayOrder: 2,
+      },
+      {
+        title: 'T3 Duplex',
+        slug: 't3-duplex',
+        unitRef: 'Fracção C',
+        description: 'Duplex com piso extra: espaço para família + trabalho + lazer.',
+        typology: 'T3',
+        grossArea: 108.67,
+        usefulArea: 66.30,
+        outdoorArea: 9.26,
+        floor: 'Piso 2 (Duplex)',
+        orientation: '',
+        energyCert: '',
+        bedrooms: 3,
+        bathrooms: 3,
+        price: 449000,
+        priceLabel: '€449.000',
+        status: 'available',
+        deliveryDate: 'Abril 2026',
+        specs: {
+          'Interior (piso base)': '66,30 m²',
+          'Varanda frente': '3,00 m²',
+          'Pátio': '6,26 m²',
+          'Piso superior': '33,11 m²',
+        },
+        highlights: ['Duplex', 'Varanda'],
+        displayOrder: 3,
+      },
+    ];
+
+    const created = [];
+    for (const unitTemplate of velaskUnits) {
+      const timestamp = Date.now();
+      const unitId = `${timestamp}`;
+      const unitKey = `unit:${unitId}`;
+
+      const unitData = {
+        id: unitId,
+        projectId,
+        ...unitTemplate,
+        portalUrl: null,
+        brochureUrl: null,
+        imageUrl: '',
+        images: [],
+        floorPlanUrl: '',
+        published: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        timestamp,
+      };
+
+      await kv.set(unitKey, unitData);
+      created.push(unitData);
+      console.log(`Seeded unit: ${unitId} - ${unitTemplate.title}`);
+
+      // Small delay to ensure unique timestamps
+      await new Promise(r => setTimeout(r, 5));
+    }
+
+    return c.json({
+      success: true,
+      message: `${created.length} unidades Velask criadas com sucesso!`,
+      units: created,
+    });
+  } catch (error) {
+    console.log(`Unit seed error: ${error}`);
+    return c.json({ error: "Erro ao popular unidades." }, 500);
   }
 });
 
@@ -1829,6 +2156,50 @@ app.post("/make-server-4b2936bc/upload/projects", async (c) => {
   }
 });
 
+// Upload image for units
+app.post("/make-server-4b2936bc/upload/units", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File;
+    if (!file) return c.json({ error: "Nenhum arquivo foi enviado" }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: "Apenas imagens são permitidas" }, 400);
+    if (file.size > 5 * 1024 * 1024) return c.json({ error: "A imagem deve ter no máximo 5MB" }, 400);
+
+    const { createClient } = await import('jsr:@supabase/supabase-js@2');
+    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const bucketName = 'make-4b2936bc-units';
+
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.some((b: any) => b.name === bucketName)) {
+      await supabase.storage.createBucket(bucketName, { public: false, fileSizeLimit: 5242880 });
+    }
+
+    const timestamp = Date.now();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `units/${fileName}`;
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, arrayBuffer, { contentType: file.type });
+    if (uploadError) {
+      console.log(`Upload error:`, uploadError);
+      return c.json({ error: "Erro ao fazer upload da imagem" }, 500);
+    }
+
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from(bucketName).createSignedUrl(filePath, 315360000);
+    if (signedUrlError) {
+      console.log(`Signed URL error:`, signedUrlError);
+      return c.json({ error: "Erro ao gerar URL da imagem" }, 500);
+    }
+
+    console.log(`Image uploaded successfully: ${filePath}`);
+    return c.json({ success: true, url: signedUrlData.signedUrl, path: filePath });
+  } catch (error) {
+    console.log(`Image upload error: ${error}`);
+    return c.json({ error: "Erro ao processar upload" }, 500);
+  }
+});
+
 // Upload image for insights
 app.post("/make-server-4b2936bc/upload/insights", async (c) => {
   try {
@@ -2398,6 +2769,157 @@ app.get("/make-server-4b2936bc/controlo/auto-kpis", async (c) => {
   } catch (error) {
     console.log(`Error computing auto-kpis: ${error}`);
     return c.json({ error: "Erro ao calcular KPIs automáticos" }, 500);
+  }
+});
+
+// ============================================
+// FOLLOW-UP ENDPOINTS
+// ============================================
+
+// GET /contacts/:id/followups — List follow-ups for a contact
+app.get("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
+    const followups = await kv.getByPrefix(`followup:${normalizedId}:`);
+    const sorted = followups.sort((a: any, b: any) => {
+      const dateA = `${a.dueDate}T${a.dueTime || '23:59'}`;
+      const dateB = `${b.dueDate}T${b.dueTime || '23:59'}`;
+      return dateA.localeCompare(dateB);
+    });
+    return c.json({ success: true, followups: sorted, count: sorted.length });
+  } catch (error) {
+    console.log(`Error retrieving followups: ${error}`);
+    return c.json({ error: "Erro ao buscar follow-ups" }, 500);
+  }
+});
+
+// POST /contacts/:id/followups — Create follow-up
+app.post("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
+    const body = await c.req.json();
+    const { title, type, dueDate, dueTime, priority, notes } = body || {};
+
+    if (!title || !type || !dueDate || !priority) {
+      return c.json({ error: "Título, tipo, data e prioridade são obrigatórios" }, 400);
+    }
+
+    const timestamp = Date.now();
+    const followupId = `${timestamp}`;
+    const key = `followup:${normalizedId}:${followupId}`;
+
+    const data = {
+      id: followupId,
+      contactId: normalizedId,
+      title,
+      type,
+      dueDate,
+      dueTime: dueTime || null,
+      priority,
+      notes: notes || '',
+      status: 'pending',
+      outcome: null,
+      outcomeNotes: null,
+      completedAt: null,
+      // Sequence preparation fields (Phase 2)
+      sequenceEnrollmentId: null,
+      sequenceStepId: null,
+      isAutomated: false,
+      createdAt: new Date().toISOString(),
+      timestamp,
+    };
+
+    await kv.set(key, data);
+    console.log(`Follow-up created for contact ${normalizedId}: ${type} - ${title}`);
+    return c.json({ success: true, followup: data });
+  } catch (error) {
+    console.log(`Error creating followup: ${error}`);
+    return c.json({ error: "Erro ao criar follow-up" }, 500);
+  }
+});
+
+// PUT /contacts/:id/followups/:fid — Update follow-up
+app.put("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const fid = c.req.param("fid");
+    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
+    const key = `followup:${normalizedId}:${fid}`;
+
+    const existing = await kv.get(key);
+    if (!existing) {
+      return c.json({ error: "Follow-up não encontrado" }, 404);
+    }
+
+    const body = await c.req.json();
+    const { title, type, dueDate, dueTime, priority, notes, status, outcome, outcomeNotes } = body || {};
+
+    const updated = {
+      ...(existing as any),
+      ...(title !== undefined && { title }),
+      ...(type !== undefined && { type }),
+      ...(dueDate !== undefined && { dueDate }),
+      ...(dueTime !== undefined && { dueTime }),
+      ...(priority !== undefined && { priority }),
+      ...(notes !== undefined && { notes }),
+      ...(status !== undefined && { status }),
+      ...(outcome !== undefined && { outcome }),
+      ...(outcomeNotes !== undefined && { outcomeNotes }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Auto-set completedAt when status becomes completed
+    if (status === 'completed' && !(existing as any).completedAt) {
+      updated.completedAt = new Date().toISOString();
+    }
+
+    await kv.set(key, updated);
+    console.log(`Follow-up updated: ${key} -> status=${updated.status}`);
+    return c.json({ success: true, followup: updated });
+  } catch (error) {
+    console.log(`Error updating followup: ${error}`);
+    return c.json({ error: "Erro ao atualizar follow-up" }, 500);
+  }
+});
+
+// DELETE /contacts/:id/followups/:fid — Delete follow-up
+app.delete("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const fid = c.req.param("fid");
+    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
+    const key = `followup:${normalizedId}:${fid}`;
+    await kv.del(key);
+    console.log(`Follow-up deleted: ${key}`);
+    return c.json({ success: true, message: "Follow-up eliminado" });
+  } catch (error) {
+    console.log(`Error deleting followup: ${error}`);
+    return c.json({ error: "Erro ao eliminar follow-up" }, 500);
+  }
+});
+
+// GET /followups/pending — Global: all pending/overdue follow-ups
+app.get("/make-server-4b2936bc/followups/pending", async (c) => {
+  try {
+    const allFollowups = await kv.getByPrefix("followup:");
+    const today = new Date().toISOString().slice(0, 10);
+    const pending = allFollowups
+      .filter((f: any) => f.status === 'pending')
+      .map((f: any) => ({
+        ...f,
+        isOverdue: f.dueDate < today,
+      }))
+      .sort((a: any, b: any) => {
+        const dateA = `${a.dueDate}T${a.dueTime || '23:59'}`;
+        const dateB = `${b.dueDate}T${b.dueTime || '23:59'}`;
+        return dateA.localeCompare(dateB);
+      });
+    return c.json({ success: true, followups: pending, count: pending.length });
+  } catch (error) {
+    console.log(`Error retrieving pending followups: ${error}`);
+    return c.json({ error: "Erro ao buscar follow-ups pendentes" }, 500);
   }
 });
 

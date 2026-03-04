@@ -75,4 +75,7 @@ export const CACHE_KEYS = {
   PROJECT_BY_ID: (id: string) => `project:${id}`,
   INSIGHTS: 'insights:all',
   INSIGHT_BY_ID: (id: string) => `insight:${id}`,
+  UNITS_ALL: 'units:all',
+  UNITS_BY_PROJECT: (projectId: string) => `units:project:${projectId}`,
+  UNIT_BY_ID: (id: string) => `unit:${id}`,
 } as const;

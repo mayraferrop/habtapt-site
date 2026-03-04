@@ -25,10 +25,14 @@ import {
   Eye,
   Trash2,
   UserPlus,
+  Plus,
   TrendingDown,
   BarChart3,
   Save,
   Edit,
+  CheckCircle,
+  AlertCircle,
+  Home,
 } from './icons';
 import { toast } from 'sonner';
 import { supabaseFetch } from '../utils/supabase/client';
@@ -46,6 +50,7 @@ import { animations } from '../utils/animations';
 import { designSystem } from './design-system';
 import { LeadsPipeline } from './admin/LeadsPipeline';
 import { ControloManager } from './admin/ControloManager';
+import { UnitsManager } from './admin/UnitsManager';
 
 interface Contact {
   id: string;
@@ -57,12 +62,62 @@ interface Contact {
   createdAt: string;
   timestamp: number;
   pipelineStage?: 'novo' | 'contato' | 'qualificado' | 'visita' | 'proposta' | 'negociacao' | 'ganho' | 'perdido';
+  leadNumber?: number;
   // Preferências do lead
   desiredLocations?: string[];
   maxBudget?: string;
   typology?: string;
   notes?: string;
 }
+
+type FollowupType = 'call' | 'email' | 'whatsapp' | 'meeting' | 'task';
+type FollowupPriority = 'low' | 'medium' | 'high' | 'urgent';
+type FollowupStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
+type FollowupOutcome = 'answered' | 'no_answer' | 'voicemail' | 'interested' | 'not_interested' | 'meeting_booked' | 'sent' | 'replied' | 'rescheduled';
+
+interface Followup {
+  id: string;
+  contactId: string;
+  title: string;
+  type: FollowupType;
+  dueDate: string;
+  dueTime?: string | null;
+  priority: FollowupPriority;
+  notes?: string;
+  status: FollowupStatus;
+  outcome?: FollowupOutcome | null;
+  outcomeNotes?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  timestamp: number;
+}
+
+const FOLLOWUP_TYPES: { value: FollowupType; label: string }[] = [
+  { value: 'call', label: 'Chamada' },
+  { value: 'email', label: 'Email' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'meeting', label: 'Reunião' },
+  { value: 'task', label: 'Tarefa' },
+];
+
+const FOLLOWUP_PRIORITIES: { value: FollowupPriority; label: string; color: string }[] = [
+  { value: 'low', label: 'Baixa', color: '#6B7280' },
+  { value: 'medium', label: 'Média', color: '#F59E0B' },
+  { value: 'high', label: 'Alta', color: '#F97316' },
+  { value: 'urgent', label: 'Urgente', color: '#EF4444' },
+];
+
+const FOLLOWUP_OUTCOMES: { value: FollowupOutcome; label: string }[] = [
+  { value: 'answered', label: 'Atendeu' },
+  { value: 'no_answer', label: 'Sem resposta' },
+  { value: 'voicemail', label: 'Voicemail' },
+  { value: 'interested', label: 'Interessado' },
+  { value: 'not_interested', label: 'Sem interesse' },
+  { value: 'meeting_booked', label: 'Reunião marcada' },
+  { value: 'sent', label: 'Enviado' },
+  { value: 'replied', label: 'Respondeu' },
+  { value: 'rescheduled', label: 'Reagendado' },
+];
 
 interface Subscriber {
   id: string;
@@ -113,7 +168,7 @@ interface Insight {
 
 export function AdminPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'contacts' | 'leads' | 'subscribers' | 'projects' | 'insights' | 'testimonials' | 'controlo'>('contacts');
+  const [activeTab, setActiveTab] = useState<'contacts' | 'leads' | 'subscribers' | 'projects' | 'units' | 'insights' | 'testimonials' | 'controlo'>('contacts');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -484,6 +539,7 @@ export function AdminPanel() {
             { id: 'leads' as const, label: 'Leads', icon: Users, count: contacts.length },
             { id: 'subscribers' as const, label: 'Newsletter', icon: Inbox, count: subscribers.length },
             { id: 'projects' as const, label: 'Projetos', icon: Building2, count: projects.length },
+            { id: 'units' as const, label: 'Unidades', icon: Home, count: 0 },
             { id: 'insights' as const, label: 'Insights', icon: BookOpen, count: insights.length },
             { id: 'testimonials' as const, label: 'Depoimentos', icon: MessageSquare, count: testimonialsCount },
             { id: 'controlo' as const, label: 'Controlo', icon: BarChart3, count: 0 },
@@ -536,7 +592,7 @@ export function AdminPanel() {
         </div>
 
         {/* Compact Toolbar - Only for contacts and subscribers */}
-        {activeTab !== 'projects' && activeTab !== 'insights' && activeTab !== 'testimonials' && activeTab !== 'leads' && activeTab !== 'controlo' && (
+        {activeTab !== 'projects' && activeTab !== 'units' && activeTab !== 'insights' && activeTab !== 'testimonials' && activeTab !== 'leads' && activeTab !== 'controlo' && (
           <div
             style={{
               padding: `${spacing[3]} ${spacing[4]}`,
@@ -756,7 +812,7 @@ export function AdminPanel() {
           id={`tabpanel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
-          style={{ padding: (activeTab === 'projects' || activeTab === 'insights' || activeTab === 'testimonials' || activeTab === 'controlo') ? spacing[6] : spacing[4] }}
+          style={{ padding: (activeTab === 'projects' || activeTab === 'units' || activeTab === 'insights' || activeTab === 'testimonials' || activeTab === 'controlo') ? spacing[6] : spacing[4] }}
         >
           {isLoading ? (
             <SkeletonTable rows={5} />
@@ -774,6 +830,8 @@ export function AdminPanel() {
                 />
               ) : activeTab === 'projects' ? (
                 <ProjectsManager projects={projects} onRefresh={fetchProjects} isLoading={isLoading} />
+              ) : activeTab === 'units' ? (
+                <UnitsManager />
               ) : activeTab === 'insights' ? (
                 <InsightsManager insights={insights} onRefresh={fetchInsights} isLoading={isLoading} />
               ) : activeTab === 'testimonials' ? (
@@ -818,7 +876,78 @@ function ContactDetailModal({
   const [newActivity, setNewActivity] = useState({ date: new Date().toISOString().slice(0, 10), channel: '', type: '', content: '' });
   const CHANNELS = ['Telefone', 'Email', 'WhatsApp', 'Mensagem'];
 
+  // Follow-ups state
+  const [followups, setFollowups] = useState<Followup[]>([]);
+  const [loadingFollowups, setLoadingFollowups] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    title: '',
+    type: 'call' as FollowupType,
+    dueDate: new Date().toISOString().slice(0, 10),
+    dueTime: '',
+    priority: 'medium' as FollowupPriority,
+    notes: '',
+  });
+  const [completingFollowupId, setCompletingFollowupId] = useState<string | null>(null);
+  const [selectedOutcome, setSelectedOutcome] = useState<FollowupOutcome | ''>('');
+
   const normalizeId = (id: string) => (id.startsWith('contact:') ? id.slice('contact:'.length) : id);
+
+  const fetchFollowups = React.useCallback(async () => {
+    setLoadingFollowups(true);
+    try {
+      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups`, {}, 1, true);
+      const data = await res.json();
+      if (res.ok && data.followups) setFollowups(data.followups);
+    } catch { setFollowups([]); }
+    finally { setLoadingFollowups(false); }
+  }, [contact.id]);
+
+  useEffect(() => { fetchFollowups(); }, [fetchFollowups]);
+
+  const handleAddFollowup = async () => {
+    if (!newFollowup.title.trim() || !newFollowup.dueDate) { toast.error('Título e data são obrigatórios'); return; }
+    try {
+      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: newFollowup.title.trim(),
+          type: newFollowup.type,
+          dueDate: newFollowup.dueDate,
+          dueTime: newFollowup.dueTime || undefined,
+          priority: newFollowup.priority,
+          notes: newFollowup.notes.trim() || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error('Erro ao criar follow-up');
+      toast.success('Follow-up criado');
+      setNewFollowup({ title: '', type: 'call', dueDate: new Date().toISOString().slice(0, 10), dueTime: '', priority: 'medium', notes: '' });
+      fetchFollowups();
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro'); }
+  };
+
+  const handleCompleteFollowup = async (followupId: string) => {
+    if (!selectedOutcome) { toast.error('Selecione um resultado'); return; }
+    try {
+      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups/${followupId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'completed', outcome: selectedOutcome }),
+      });
+      if (!res.ok) throw new Error('Erro ao concluir follow-up');
+      toast.success('Follow-up concluído');
+      setCompletingFollowupId(null);
+      setSelectedOutcome('');
+      fetchFollowups();
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro'); }
+  };
+
+  const handleDeleteFollowup = async (followupId: string) => {
+    try {
+      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups/${followupId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erro ao eliminar');
+      toast.success('Follow-up eliminado');
+      fetchFollowups();
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro'); }
+  };
 
   const fetchActivities = React.useCallback(async () => {
     setLoadingActivities(true);
@@ -1244,6 +1373,112 @@ function ContactDetailModal({
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* --- Follow-ups --- */}
+          <div style={{ borderTop: `1px solid ${colors.gray[200]}`, marginTop: spacing[2], paddingTop: spacing[3] }}>
+            <div style={{ fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[500], textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: spacing[3] }}>
+              Follow-ups
+            </div>
+
+            {/* Novo follow-up form */}
+            <div style={{ background: colors.gray[50], border: `1px solid ${colors.gray[200]}`, borderRadius: radius.md, padding: spacing[3], display: 'flex', flexDirection: 'column', gap: spacing[2], marginBottom: spacing[3] }}>
+              <div>
+                <label style={{ display: 'block', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.gray[600], marginBottom: '2px' }}>Título</label>
+                <input type="text" value={newFollowup.title} onChange={(e) => setNewFollowup({ ...newFollowup, title: e.target.value })} placeholder="Ex: Ligar para confirmar interesse" style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[2] }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.gray[600], marginBottom: '2px' }}>Tipo</label>
+                  <select value={newFollowup.type} onChange={(e) => setNewFollowup({ ...newFollowup, type: e.target.value as FollowupType })} style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white }}>
+                    {FOLLOWUP_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.gray[600], marginBottom: '2px' }}>Prioridade</label>
+                  <select value={newFollowup.priority} onChange={(e) => setNewFollowup({ ...newFollowup, priority: e.target.value as FollowupPriority })} style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none', background: colors.white }}>
+                    {FOLLOWUP_PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[2] }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.gray[600], marginBottom: '2px' }}>Data</label>
+                  <input type="date" value={newFollowup.dueDate} onChange={(e) => setNewFollowup({ ...newFollowup, dueDate: e.target.value })} style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.gray[600], marginBottom: '2px' }}>Hora (opcional)</label>
+                  <input type="time" value={newFollowup.dueTime} onChange={(e) => setNewFollowup({ ...newFollowup, dueTime: e.target.value })} style={{ width: '100%', padding: spacing[2], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.sm, outline: 'none' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={handleAddFollowup} style={{ display: 'inline-flex', alignItems: 'center', gap: spacing[1], padding: `${spacing[1]} ${spacing[3]}`, border: 'none', background: colors.primary, color: colors.white, borderRadius: radius.md, cursor: 'pointer', fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold }}>
+                  <Plus size={14} />
+                  Criar follow-up
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de follow-ups */}
+            {loadingFollowups ? (
+              <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>A carregar...</div>
+            ) : followups.length === 0 ? (
+              <div style={{ textAlign: 'center', color: colors.gray[400], fontSize: typography.fontSize.sm, padding: spacing[3] }}>Nenhum follow-up registado</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+                {followups.map((fu) => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const isOverdue = fu.status === 'pending' && fu.dueDate < today;
+                  const isPending = fu.status === 'pending';
+                  const priorityInfo = FOLLOWUP_PRIORITIES.find((p) => p.value === fu.priority);
+                  const typeInfo = FOLLOWUP_TYPES.find((t) => t.value === fu.type);
+                  return (
+                    <div key={fu.id} style={{ display: 'flex', flexDirection: 'column', gap: spacing[1], padding: spacing[2], border: `1px solid ${isOverdue ? colors.error : colors.gray[200]}`, borderRadius: radius.md, background: isOverdue ? designSystem.helpers.hexToRgba(colors.error, 0.03) : colors.white }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing[1] }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing[1], flex: 1, minWidth: 0 }}>
+                          {fu.status === 'completed' ? (
+                            <CheckCircle size={14} style={{ color: colors.success, flexShrink: 0 }} />
+                          ) : isOverdue ? (
+                            <AlertCircle size={14} style={{ color: colors.error, flexShrink: 0 }} />
+                          ) : (
+                            <Clock size={14} style={{ color: colors.warning, flexShrink: 0 }} />
+                          )}
+                          <span style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: fu.status === 'completed' ? colors.gray[400] : colors.gray[800], textDecoration: fu.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {fu.title}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          {isPending && completingFollowupId !== fu.id && (
+                            <button type="button" onClick={() => { setCompletingFollowupId(fu.id); setSelectedOutcome(''); }} style={{ border: 'none', background: designSystem.helpers.hexToRgba(colors.success, 0.1), color: colors.success, borderRadius: radius.md, padding: '2px 6px', cursor: 'pointer', fontSize: '10px', fontWeight: typography.fontWeight.bold }}>
+                              Concluir
+                            </button>
+                          )}
+                          <button type="button" onClick={() => handleDeleteFollowup(fu.id)} aria-label="Eliminar follow-up" style={{ flexShrink: 0, border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '2px' }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[1], flexWrap: 'wrap' }}>
+                        <span style={{ padding: '1px 6px', background: designSystem.helpers.hexToRgba(colors.primary, 0.08), color: colors.primary, borderRadius: radius.full, fontSize: '10px', fontWeight: typography.fontWeight.semibold }}>{typeInfo?.label || fu.type}</span>
+                        <span style={{ padding: '1px 6px', background: designSystem.helpers.hexToRgba(priorityInfo?.color || '#6B7280', 0.1), color: priorityInfo?.color || '#6B7280', borderRadius: radius.full, fontSize: '10px', fontWeight: typography.fontWeight.bold }}>{priorityInfo?.label || fu.priority}</span>
+                        <span style={{ fontSize: '10px', color: isOverdue ? colors.error : colors.gray[500], fontWeight: isOverdue ? typography.fontWeight.bold : typography.fontWeight.medium }}>{fu.dueDate}{fu.dueTime ? ` ${fu.dueTime}` : ''}</span>
+                        {fu.outcome && <span style={{ padding: '1px 6px', background: colors.gray[100], color: colors.gray[600], borderRadius: radius.full, fontSize: '10px' }}>{FOLLOWUP_OUTCOMES.find((o) => o.value === fu.outcome)?.label || fu.outcome}</span>}
+                      </div>
+                      {completingFollowupId === fu.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing[1], marginTop: spacing[1], padding: spacing[2], background: colors.gray[50], borderRadius: radius.md }}>
+                          <select value={selectedOutcome} onChange={(e) => setSelectedOutcome(e.target.value as FollowupOutcome)} style={{ flex: 1, padding: spacing[1], border: `1px solid ${colors.gray[300]}`, borderRadius: radius.md, fontSize: typography.fontSize.xs, outline: 'none', background: colors.white }}>
+                            <option value="">— Resultado —</option>
+                            {FOLLOWUP_OUTCOMES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                          <button type="button" onClick={() => handleCompleteFollowup(fu.id)} style={{ border: 'none', background: colors.success, color: colors.white, borderRadius: radius.md, padding: `${spacing[1]} ${spacing[2]}`, cursor: 'pointer', fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold }}>OK</button>
+                          <button type="button" onClick={() => { setCompletingFollowupId(null); setSelectedOutcome(''); }} style={{ border: 'none', background: 'none', color: colors.gray[400], cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

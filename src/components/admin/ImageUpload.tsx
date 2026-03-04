@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 interface ImageUploadProps {
   value?: string;
   onChange: (url: string) => void;
-  bucket: 'projects' | 'insights' | 'testimonials';
+  bucket: 'projects' | 'insights' | 'testimonials' | 'units';
   disabled?: boolean;
   label?: string;
 }
@@ -62,6 +62,7 @@ export function ImageUpload({ value, onChange, bucket, disabled, label = 'Imagem
         'projects': 'make-4b2936bc-projects',
         'insights': 'make-4b2936bc-insights',
         'testimonials': 'make-4b2936bc-testimonials',
+        'units': 'make-4b2936bc-units',
       };
       const actualBucket = bucketMap[bucket] || bucket;
 
