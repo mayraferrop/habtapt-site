@@ -622,9 +622,7 @@ export function Contact() {
                             color: designSystem.colors.brand.primary,
                             textDecoration: 'none',
                           }}
-                          className="transition-colors"
-                          onMouseEnter={(e) => e.currentTarget.style.color = designSystem.colors.brand.secondary}
-                          onMouseLeave={(e) => e.currentTarget.style.color = designSystem.colors.brand.primary}
+                          className="transition-colors hover:text-[#B8956A]"
                         >
                           {info.value}
                         </a>
