@@ -570,7 +570,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       if (!response.ok) {
         throw new Error(data?.error || `Falha ao atualizar estágio (HTTP ${response.status})`);
       }
-      onRefresh?.();
+      // NÃO chamar onRefresh aqui — desmonta o componente e fecha o modal
+      // O refresh será feito no handleStageChangeConfirm após o modal fechar
       // persistir localmente também
       try {
         const currentRaw = localStorage.getItem('habta_pipeline_stages');
@@ -621,6 +622,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
 
     setStageChangeInfo(null);
     setStageChangeComment('');
+    onRefresh?.();
   };
 
   const card = (c: Contact) => (
