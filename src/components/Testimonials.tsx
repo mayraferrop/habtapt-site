@@ -314,6 +314,8 @@ export function Testimonials() {
                   <ImageWithFallback
                     src={testimonial.image}
                     alt={testimonial.name}
+                    width={56}
+                    height={56}
                     className="w-14 h-14 rounded-full object-cover"
                   />
                   <div
