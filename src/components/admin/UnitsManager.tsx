@@ -23,6 +23,12 @@ import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { ImageUpload } from './ImageUpload';
 import { supabaseFetch } from '../../utils/supabase/client';
 import { logError } from '../../utils/error-logger';
+import {
+  createUnit,
+  updateUnit,
+  deleteUnit,
+  seedUnits,
+} from '../../lib/actions/units';
 
 type UnitStatus = 'available' | 'reserved' | 'sold';
 
@@ -235,27 +241,21 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
     setIsSaving(true);
 
     try {
-      const endpoint = editingUnit ? `units/${editingUnit.id}` : 'units';
-      const method = editingUnit ? 'PUT' : 'POST';
-
       const cleanedData = {
         ...formData,
         portalUrl: formData.portalUrl?.trim() || null,
         brochureUrl: formData.brochureUrl?.trim() || null,
       };
 
-      const response = await supabaseFetch(endpoint, {
-        method,
-        body: JSON.stringify(cleanedData),
-      });
+      const result = editingUnit
+        ? await updateUnit(editingUnit.id, cleanedData as Record<string, unknown>)
+        : await createUnit(cleanedData as Record<string, unknown>);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao salvar unidade');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao salvar unidade');
       }
 
-      toast.success(data.message);
+      toast.success(result.message || (editingUnit ? 'Unidade atualizada!' : 'Unidade criada!'));
       handleCloseModal();
       fetchUnits();
       onRefresh?.();
@@ -273,14 +273,13 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
     setIsDeleting(true);
 
     try {
-      const response = await supabaseFetch(`units/${id}`, { method: 'DELETE' });
-      const data = await response.json();
+      const result = await deleteUnit(id);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao eliminar unidade');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao eliminar unidade');
       }
 
-      toast.success(data.message);
+      toast.success(result.message || 'Unidade eliminada!');
       fetchUnits();
       onRefresh?.();
     } catch (error) {
@@ -295,15 +294,11 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
     if (!confirm('Isto vai criar as 3 unidades do Velask (T1, T2, T3). Continuar?')) return;
 
     try {
-      const response = await supabaseFetch('units/seed', {
-        method: 'POST',
-        body: JSON.stringify({}),
-      });
-      const data = await response.json();
+      const result = await seedUnits();
 
-      if (!response.ok) throw new Error(data.error);
+      if (!result.success) throw new Error(result.error);
 
-      toast.success(data.message);
+      toast.success(result.message || 'Unidades Velask criadas!');
       fetchUnits();
     } catch (error) {
       logError(error, { component: 'UnitsManager', action: 'seedVelask' });

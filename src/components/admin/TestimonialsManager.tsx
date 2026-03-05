@@ -14,6 +14,11 @@ import { AnimatedButton } from '../primitives/AnimatedButton';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { ImageUpload } from './ImageUpload';
 import { supabaseFetch } from '../../utils/supabase/client';
+import {
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial,
+} from '../../lib/actions/testimonials';
 
 interface Testimonial {
   id: string;
@@ -126,41 +131,20 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
     setIsSaving(true);
 
     try {
-      if (editingTestimonial) {
-        // Atualizar depoimento existente
-        const response = await supabaseFetch(`testimonials/${editingTestimonial.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(formData),
-        }, 1, true); // isAdmin = true
+      const result = editingTestimonial
+        ? await updateTestimonial(editingTestimonial.id, formData as Record<string, unknown>)
+        : await createTestimonial(formData as Record<string, unknown>);
 
-        if (response.ok) {
-          toast.success('Depoimento atualizado com sucesso!');
-          await fetchTestimonials();
-          onRefresh?.();
-          handleCloseModal();
-        } else {
-          const error = await response.json();
-          toast.error(error.error || 'Erro ao atualizar depoimento');
-        }
+      if (result.success) {
+        toast.success(editingTestimonial ? 'Depoimento atualizado com sucesso!' : 'Depoimento criado com sucesso!');
+        await fetchTestimonials();
+        onRefresh?.();
+        handleCloseModal();
       } else {
-        // Criar novo depoimento
-        const response = await supabaseFetch('testimonials', {
-          method: 'POST',
-          body: JSON.stringify(formData),
-        }, 1, true); // isAdmin = true
-
-        if (response.ok) {
-          toast.success('Depoimento criado com sucesso!');
-          await fetchTestimonials();
-          onRefresh?.();
-          handleCloseModal();
-        } else {
-          const error = await response.json();
-          toast.error(error.error || 'Erro ao criar depoimento');
-        }
+        toast.error(result.error || 'Erro ao salvar depoimento');
       }
     } catch (error) {
-      console.error('[TestimonialsManager] ❌ Erro ao salvar:', error);
+      console.error('[TestimonialsManager] Erro ao salvar:', error);
       toast.error('Erro ao salvar depoimento');
     } finally {
       setIsSaving(false);
@@ -173,20 +157,17 @@ export function TestimonialsManager({ onRefresh, isLoading: parentLoading }: Tes
     }
 
     try {
-      const response = await supabaseFetch(`testimonials/${id}`, {
-        method: 'DELETE',
-      }, 1, true); // isAdmin = true
+      const result = await deleteTestimonial(id);
 
-      if (response.ok) {
+      if (result.success) {
         toast.success('Depoimento excluído com sucesso!');
         await fetchTestimonials();
         onRefresh?.();
       } else {
-        const error = await response.json();
-        toast.error(error.error || 'Erro ao excluir depoimento');
+        toast.error(result.error || 'Erro ao excluir depoimento');
       }
     } catch (error) {
-      console.error('[TestimonialsManager] ❌ Erro ao excluir:', error);
+      console.error('[TestimonialsManager] Erro ao excluir:', error);
       toast.error('Erro ao excluir depoimento');
     }
   };

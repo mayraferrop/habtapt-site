@@ -26,6 +26,7 @@ import { AnimatedButton } from '../primitives/AnimatedButton';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { ImageUpload } from './ImageUpload';
 import { supabaseFetch } from '../../utils/supabase/client';
+import { createProject, updateProject, deleteProject } from '@/lib/actions/projects';
 
 import type { Project, ProjectStatus, InvestmentStrategy } from '@/types/project';
 
@@ -188,12 +189,6 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
     setIsSaving(true);
 
     try {
-      const endpoint = editingProject
-        ? `projects/${editingProject.id}`
-        : 'projects';
-
-      const method = editingProject ? 'PUT' : 'POST';
-
       // Clean up empty strings to null for links
       const cleanedFormData = {
         ...formData,
@@ -202,18 +197,15 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
         brochureLink: formData.brochureLink?.trim() || null,
       };
 
-      const response = await supabaseFetch(endpoint, {
-        method,
-        body: JSON.stringify(cleanedFormData),
-      });
+      const result = editingProject
+        ? await updateProject(editingProject.id, cleanedFormData)
+        : await createProject(cleanedFormData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao salvar projeto');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao salvar projeto');
       }
 
-      toast.success(data.message);
+      toast.success(result.message || (editingProject ? 'Projeto atualizado!' : 'Projeto criado!'));
       handleCloseModal();
       onRefresh();
     } catch (error) {
@@ -232,17 +224,13 @@ export function ProjectsManager({ projects, onRefresh, isLoading }: ProjectsMana
     setIsDeleting(true);
 
     try {
-      const response = await supabaseFetch(`projects/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await deleteProject(id);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao excluir projeto');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao excluir projeto');
       }
 
-      toast.success(data.message);
+      toast.success(result.message || 'Projeto excluído!');
       onRefresh();
     } catch (error) {
       console.error('Error deleting project:', error);

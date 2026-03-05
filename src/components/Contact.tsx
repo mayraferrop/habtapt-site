@@ -7,7 +7,7 @@ import { Mail, Phone, MapPin, Send, Clock, MessageSquare, ChevronDown, HelpCircl
 import { useInView } from './useInView';
 import { toast } from 'sonner';
 import { designSystem } from './design-system';
-import { supabaseFetch } from '../utils/supabase/client';
+import { submitContact } from '../lib/actions/contact';
 
 export function Contact() {
   const { ref, isInView } = useInView({ threshold: 0.1 });
@@ -87,25 +87,19 @@ export function Contact() {
     setIsSubmitting(true);
 
     try {
-      // Send to Supabase backend with tracking
-      const response = await supabaseFetch('contact', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...formData,
-          sourceUrl: window.location.href,
-        }),
+      const result = await submitContact({
+        ...formData,
+        sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Contact form submission error:', data);
-        toast.error(data.error || 'Erro ao enviar mensagem. Tente novamente.');
+      if (!result.success) {
+        console.error('Contact form submission error:', result.error);
+        toast.error(result.error || 'Erro ao enviar mensagem. Tente novamente.');
         setIsSubmitting(false);
         return;
       }
 
-      toast.success(data.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
+      toast.success(result.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
       
       setFormData({
         name: '',

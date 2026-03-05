@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Mail, Send, CheckCircle } from './icons';
 import { designSystem } from './design-system';
 import { toast } from 'sonner';
-import { supabaseFetch } from '../utils/supabase/client';
+import { subscribeNewsletter } from '../lib/actions/newsletter';
 
 interface NewsletterModalProps {
   isOpen: boolean;
@@ -55,23 +55,17 @@ export function NewsletterModal({ isOpen, onClose }: NewsletterModalProps) {
     setIsSubmitting(true);
 
     try {
-      // Send to Supabase backend
-      const response = await supabaseFetch('newsletter', {
-        method: 'POST',
-        body: JSON.stringify({ email, consent: true }),
-      });
+      const result = await subscribeNewsletter({ email, consent: true });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Newsletter subscription error (modal):', data);
-        toast.error(data.error || 'Erro ao processar subscrição. Tente novamente.');
+      if (!result.success) {
+        console.error('Newsletter subscription error (modal):', result.error);
+        toast.error(result.error || 'Erro ao processar subscrição. Tente novamente.');
         setIsSubmitting(false);
         return;
       }
 
       setIsSuccess(true);
-      toast.success(data.message || 'Subscrição confirmada! Verifique o seu email.');
+      toast.success(result.message || 'Subscrição confirmada! Verifique o seu email.');
       
       // Fechar modal após 2 segundos
       setTimeout(() => {

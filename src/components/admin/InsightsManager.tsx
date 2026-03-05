@@ -44,7 +44,7 @@ const colors = {
 };
 import { designSystem } from '../design-system';
 import { AnimatedButton } from '../primitives/AnimatedButton';
-import { supabaseFetch } from '../../utils/supabase/client';
+import { createInsight, updateInsight, deleteInsight } from '@/lib/actions/insights';
 import { ImageUpload } from './ImageUpload';
 import { createPortal } from 'react-dom';
 
@@ -162,27 +162,19 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
       };
 
       if (editingInsight) {
-        const response = await supabaseFetch(`insights/${editingInsight.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(insightData),
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Erro ao atualizar insight');
+        const result = await updateInsight(editingInsight.id, insightData);
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao atualizar insight');
         }
         toast.success('Insight atualizado com sucesso!');
       } else {
-        const response = await supabaseFetch('insights', {
-          method: 'POST',
-          body: JSON.stringify({
-            ...insightData,
-            id: `insight-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-          }),
+        const result = await createInsight({
+          ...insightData,
+          id: `insight-${Date.now()}`,
+          createdAt: new Date().toISOString(),
         });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Erro ao criar insight');
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao criar insight');
         }
         toast.success('Insight criado com sucesso!');
       }
@@ -205,12 +197,9 @@ export function InsightsManager({ insights, onRefresh, isLoading }: InsightsMana
     setIsDeleting(true);
 
     try {
-      const response = await supabaseFetch(`insights/${insightId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Erro ao excluir insight');
+      const result = await deleteInsight(insightId);
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao excluir insight');
       }
       toast.success('Insight excluído com sucesso!');
       onRefresh();
