@@ -225,7 +225,7 @@ export function Contact() {
             </span>
           </div>
 
-          <h2
+          <h1
             id="contact-title"
             style={{
               fontSize: designSystem.typography.fontSize['4xl'],
@@ -236,7 +236,7 @@ export function Contact() {
             }}
           >
             Vamos conversar?
-          </h2>
+          </h1>
 
           <p
             id="contact-description"
@@ -251,7 +251,7 @@ export function Contact() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-6xl mx-auto">
           {/* Contact Form */}
           <div
             className={isInView ? 'anim-fade-in-up anim-delay-2' : ''}
@@ -607,7 +607,7 @@ export function Contact() {
                             color: designSystem.colors.brand.primary,
                             textDecoration: 'none',
                           }}
-                          className="transition-colors hover:text-[#B8956A]"
+                          className="transition-colors hover:text-[#8f7350]"
                         >
                           {info.value}
                         </a>
@@ -719,7 +719,7 @@ export function Contact() {
               </span>
             </div>
 
-            <h3
+            <h2
               style={{
                 fontSize: designSystem.typography.fontSize['3xl'],
                 fontWeight: designSystem.typography.fontWeight.black,
@@ -728,7 +728,7 @@ export function Contact() {
               }}
             >
               Ainda tem dúvidas?
-            </h3>
+            </h2>
             <p
               style={{
                 fontSize: designSystem.typography.fontSize.base,

@@ -172,6 +172,13 @@ export default function VelaskLayout({
 }) {
   return (
     <>
+      <link
+        rel="preload"
+        as="image"
+        href="/images/velask/t2/1.webp"
+        type="image/webp"
+        fetchPriority="high"
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

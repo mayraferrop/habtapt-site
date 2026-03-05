@@ -1879,11 +1879,11 @@
   --primary-lighter: #2d5a7d;
   --primary-dark: #0f2738;
   --primary-foreground: #fff;
-  --secondary: #b8956a;
-  --secondary-hover: #a37d4f;
-  --secondary-light: #c9a872;
-  --secondary-lighter: #d4b485;
-  --secondary-dark: #8f7350;
+  --secondary: #8f7350;
+  --secondary-hover: #7d6544;
+  --secondary-light: #b8956a;
+  --secondary-lighter: #c9a872;
+  --secondary-dark: #7a6340;
   --secondary-foreground: #fff;
   --tertiary: #6b7c93;
   --tertiary-hover: #596a7f;

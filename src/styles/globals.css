@@ -30,11 +30,11 @@
   --primary-foreground: #ffffff;
   
   /* Secondary Palette - Dourado Sóbrio (Luxury Premium) */
-  --secondary: #B8956A;
-  --secondary-hover: #a37d4f;
-  --secondary-light: #C9A872;
-  --secondary-lighter: #d4b485;
-  --secondary-dark: #8f7350;
+  --secondary: #8f7350;
+  --secondary-hover: #7d6544;
+  --secondary-light: #B8956A;
+  --secondary-lighter: #C9A872;
+  --secondary-dark: #7a6340;
   --secondary-foreground: #ffffff;
   
   /* Tertiary Palette - Cinza Azulado (Profissional) */

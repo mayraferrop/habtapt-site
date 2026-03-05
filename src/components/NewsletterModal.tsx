@@ -58,7 +58,7 @@ export function NewsletterModal({ isOpen, onClose }: NewsletterModalProps) {
       // Send to Supabase backend
       const response = await supabaseFetch('newsletter', {
         method: 'POST',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, consent: true }),
       });
 
       const data = await response.json();

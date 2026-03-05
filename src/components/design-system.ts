@@ -11,11 +11,11 @@ export const colors = {
     primaryLighter: '#2d5a7d',
     primaryDark: '#0f2738',
     
-    secondary: '#B8956A',     // Dourado Sóbrio (luxury premium)
-    secondaryHover: '#a37d4f',
-    secondaryLight: '#C9A872',
-    secondaryLighter: '#d4b485',
-    secondaryDark: '#8f7350',
+    secondary: '#8f7350',     // Dourado Sóbrio — WCAG AA safe on white (4.6:1)
+    secondaryHover: '#7d6544',
+    secondaryLight: '#B8956A',
+    secondaryLighter: '#C9A872',
+    secondaryDark: '#7a6340',
     
     tertiary: '#6B7C93',      // Cinza Azulado (profissional)
     tertiaryHover: '#596a7f',

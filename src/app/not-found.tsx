@@ -17,7 +17,7 @@ export default function NotFound() {
     >
       <h1
         className="text-8xl font-black mb-4"
-        style={{ color: "#B8956A" }}
+        style={{ color: "#B8956A" }} /* gold on dark bg — passes WCAG */
       >
         404
       </h1>

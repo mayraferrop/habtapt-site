@@ -291,9 +291,9 @@ export default function PortfolioDetailContent() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <div style={{ background: designSystem.colors.neutral.white, padding: designSystem.spacing[6], borderRadius: designSystem.borderRadius.xl, boxShadow: designSystem.shadows.md, position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : designSystem.spacing[24] }}>
-                <h3 style={{ color: designSystem.colors.neutral[900], marginBottom: designSystem.spacing[6], fontSize: isMobile ? designSystem.typography.fontSize.xl : undefined }}>
+                <h2 style={{ color: designSystem.colors.neutral[900], marginBottom: designSystem.spacing[6], fontSize: isMobile ? designSystem.typography.fontSize.xl : undefined }}>
                   Características
-                </h3>
+                </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing[4] }}>
                   <CharacteristicRow icon={<Bed size={20} />} label="Quartos" value={`${project.bedrooms}`} />
                   <CharacteristicRow icon={<Bath size={20} />} label="Casas de Banho" value={`${project.bathrooms}`} />
@@ -534,9 +534,9 @@ export default function PortfolioDetailContent() {
           >
             <div style={{ position: 'absolute', top: '-50%', right: '-25%', width: '50%', height: '200%', background: designSystem.colors.gradients.secondary, filter: 'blur(80px)', opacity: 0.2, pointerEvents: 'none' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <h3 style={{ color: designSystem.colors.neutral.white, marginBottom: designSystem.spacing[4], fontSize: isMobile ? designSystem.typography.fontSize['2xl'] : undefined }}>
+              <h2 style={{ color: designSystem.colors.neutral.white, marginBottom: designSystem.spacing[4], fontSize: isMobile ? designSystem.typography.fontSize['2xl'] : undefined }}>
                 Interessado neste projeto?
-              </h3>
+              </h2>
               <p style={{ color: designSystem.helpers.hexToRgba(designSystem.colors.neutral.white, 0.9), fontSize: designSystem.typography.fontSize.lg, lineHeight: designSystem.typography.lineHeight.relaxed, marginBottom: designSystem.spacing[8], maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
                 Entre em contato connosco para saber mais sobre este projeto ou para discutir oportunidades semelhantes.
               </p>
