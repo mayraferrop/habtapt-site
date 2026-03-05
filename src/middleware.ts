@@ -1,7 +1,47 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { rateLimit } from '@/utils/rate-limit';
+
+// Rate limit config per route prefix
+const API_RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
+  '/api/newsletter': { maxRequests: 5, windowMs: 60_000 },   // 5 req/min
+  '/api/revalidate': { maxRequests: 10, windowMs: 60_000 },  // 10 req/min
+  '/api/': { maxRequests: 30, windowMs: 60_000 },            // 30 req/min default
+};
+
+function getApiRateConfig(pathname: string) {
+  for (const [prefix, config] of Object.entries(API_RATE_LIMITS)) {
+    if (pathname.startsWith(prefix)) return config;
+  }
+  return null;
+}
 
 export async function middleware(request: NextRequest) {
+  // Rate limit API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const ip = request.headers.get('cf-connecting-ip')
+      ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? 'unknown';
+    const config = getApiRateConfig(request.nextUrl.pathname);
+    if (config) {
+      const result = rateLimit(ip, config);
+      if (result.limited) {
+        return NextResponse.json(
+          { error: 'Too many requests' },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.ceil((result.resetAt - Date.now()) / 1000)),
+              'X-RateLimit-Remaining': '0',
+            },
+          }
+        );
+      }
+    }
+    // API routes don't need Supabase auth — return early
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -55,5 +95,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login'],
+  matcher: ['/admin/:path*', '/login', '/api/:path*'],
 };
