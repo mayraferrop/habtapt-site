@@ -7,6 +7,8 @@ import { Mail, Phone, Calendar, MessageSquare, Edit, Save, X, Plus, Trash2, Cloc
 import { colors, spacing, radius, typography, shadows } from '../../utils/styles';
 import { designSystem } from '../design-system';
 import { supabaseFetch } from '../../utils/supabase/client';
+import { createContact, updateContact, updateContactStage, createActivity, deleteActivity } from '../../lib/actions/contacts';
+import { createFollowup, updateFollowup, deleteFollowup } from '../../lib/actions/followups';
 
 interface Contact {
   id: string;
@@ -317,18 +319,15 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     }
     try {
       const normalizedId = editingContact.id.startsWith('contact:') ? editingContact.id.slice('contact:'.length) : editingContact.id;
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/followups`, {
-        method: 'POST',
-        body: JSON.stringify({
-          title: newFollowup.title.trim(),
-          type: newFollowup.type,
-          dueDate: newFollowup.dueDate,
-          dueTime: newFollowup.dueTime || undefined,
-          priority: newFollowup.priority,
-          notes: newFollowup.notes.trim() || undefined,
-        }),
+      const result = await createFollowup(normalizedId, {
+        title: newFollowup.title.trim(),
+        type: newFollowup.type,
+        dueDate: newFollowup.dueDate,
+        dueTime: newFollowup.dueTime || undefined,
+        priority: newFollowup.priority,
+        notes: newFollowup.notes.trim() || undefined,
       });
-      if (!res.ok) throw new Error('Erro ao criar follow-up');
+      if (!result.success) throw new Error(result.error || 'Erro ao criar follow-up');
       toast.success('Follow-up criado');
       setNewFollowup({ title: '', type: 'call', dueDate: new Date().toISOString().slice(0, 10), dueTime: '', priority: 'medium', notes: '' });
       fetchFollowups(editingContact.id);
@@ -354,23 +353,17 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     try {
       const normalizedId = editingContact.id.startsWith('contact:') ? editingContact.id.slice('contact:'.length) : editingContact.id;
       // 1. Complete follow-up
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/followups/${followupId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'completed', outcomeNotes: completionText.trim() }),
-      });
-      if (!res.ok) throw new Error('Erro ao concluir follow-up');
+      const result = await updateFollowup(normalizedId, followupId, { status: 'completed', outcomeNotes: completionText.trim() });
+      if (!result.success) throw new Error(result.error || 'Erro ao concluir follow-up');
 
       // 2. Auto-create activity
       const fu = followups.find((f) => f.id === followupId);
       const channel = fu ? TYPE_TO_CHANNEL[fu.type] || 'Mensagem' : 'Mensagem';
-      await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/activities`, {
-        method: 'POST',
-        body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
-          channel,
-          type: 'Follow-up',
-          content: `FU: ${fu?.title || 'Follow-up'} — ${completionText.trim()}`,
-        }),
+      await createActivity(normalizedId, {
+        date: new Date().toISOString().slice(0, 10),
+        channel,
+        type: 'Follow-up',
+        content: `FU: ${fu?.title || 'Follow-up'} — ${completionText.trim()}`,
       });
 
       toast.success('Follow-up concluído + atividade registada');
@@ -387,10 +380,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     if (!editingContact) return;
     try {
       const normalizedId = editingContact.id.startsWith('contact:') ? editingContact.id.slice('contact:'.length) : editingContact.id;
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/followups/${followupId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Erro ao eliminar');
+      const result = await deleteFollowup(normalizedId, followupId);
+      if (!result.success) throw new Error(result.error || 'Erro ao eliminar');
       toast.success('Follow-up eliminado');
       fetchFollowups(editingContact.id);
       fetchAllPendingFollowups();
@@ -496,11 +487,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     }
     try {
       const normalizedId = editingContact.id.startsWith('contact:') ? editingContact.id.slice('contact:'.length) : editingContact.id;
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/activities`, {
-        method: 'POST',
-        body: JSON.stringify(newActivity),
-      });
-      if (!res.ok) throw new Error('Erro ao criar atividade');
+      const result = await createActivity(normalizedId, newActivity);
+      if (!result.success) throw new Error(result.error || 'Erro ao criar atividade');
       toast.success('Atividade registada');
       setNewActivity({ date: new Date().toISOString().slice(0, 10), channel: '', type: '', content: '' });
       fetchActivities(editingContact.id);
@@ -513,10 +501,8 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     if (!editingContact) return;
     try {
       const normalizedId = editingContact.id.startsWith('contact:') ? editingContact.id.slice('contact:'.length) : editingContact.id;
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizedId)}/activities/${activityId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Erro ao eliminar');
+      const result = await deleteActivity(normalizedId, activityId);
+      if (!result.success) throw new Error(result.error || 'Erro ao eliminar');
       toast.success('Atividade eliminada');
       fetchActivities(editingContact.id);
     } catch (err) {
@@ -609,16 +595,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
 
     try {
       setIsSaving(true);
-      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(id))}`, {
-        method: 'PUT',
-        body: JSON.stringify({ pipelineStage: stageId }),
-      });
-      let data: { error?: string } | null = null;
-      try {
-        data = await response.json();
-      } catch {}
-      if (!response.ok) {
-        throw new Error(data?.error || `Falha ao atualizar estágio (HTTP ${response.status})`);
+      const result = await updateContactStage(normalizeContactId(id), stageId);
+      if (!result.success) {
+        throw new Error(result.error || 'Falha ao atualizar estágio');
       }
       // NÃO chamar onRefresh aqui — desmonta o componente e fecha o modal
       // O refresh será feito no handleStageChangeConfirm após o modal fechar
@@ -652,18 +631,14 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       : `Pipeline: ${fromLabel} → ${toLabel}`;
 
     try {
-      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(contactId))}/activities`, {
-        method: 'POST',
-        body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
-          channel: 'Mensagem',
-          type: 'Pipeline',
-          content,
-        }),
+      const actResult = await createActivity(normalizeContactId(contactId), {
+        date: new Date().toISOString().slice(0, 10),
+        channel: 'Mensagem',
+        type: 'Pipeline',
+        content,
       });
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || `Falha ao criar atividade (HTTP ${response.status})`);
+      if (!actResult.success) {
+        throw new Error(actResult.error || 'Falha ao criar atividade');
       }
       toast.success('Estágio atualizado e atividade registada');
     } catch {
@@ -673,16 +648,13 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
     // Create follow-up if scheduled
     if (scheduleFollowup && stageFollowup.title.trim() && stageFollowup.dueDate) {
       try {
-        const fuRes = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(contactId))}/followups`, {
-          method: 'POST',
-          body: JSON.stringify({
-            title: stageFollowup.title.trim(),
-            type: stageFollowup.type,
-            dueDate: stageFollowup.dueDate,
-            priority: stageFollowup.priority,
-          }),
+        const fuResult = await createFollowup(normalizeContactId(contactId), {
+          title: stageFollowup.title.trim(),
+          type: stageFollowup.type,
+          dueDate: stageFollowup.dueDate,
+          priority: stageFollowup.priority,
         });
-        if (fuRes.ok) {
+        if (fuResult.success) {
           toast.success('Follow-up agendado');
           fetchAllPendingFollowups();
         }
@@ -915,13 +887,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
       if (newLead.typology.trim()) payload.typology = newLead.typology.trim();
       if (newLead.notes.trim()) payload.notes = newLead.notes.trim();
       if (newLead.unitId) payload.unitId = newLead.unitId;
-      const response = await supabaseFetch('contact', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || 'Erro ao criar lead');
+      const result = await createContact(payload);
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao criar lead');
       }
       toast.success('Lead criado com sucesso');
       setIsCreating(false);
@@ -1798,16 +1766,9 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                         unitId: form.unitId,
                         proposalValue: form.proposalValue ? Number(form.proposalValue) : 0,
                       };
-                      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeContactId(editingContact.id))}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(payload),
-                      });
-                      let data: { error?: string } | null = null;
-                      try {
-                        data = await response.json();
-                      } catch {}
-                      if (!response.ok) {
-                        throw new Error(data?.error || `Falha ao salvar (HTTP ${response.status})`);
+                      const result = await updateContact(normalizeContactId(editingContact.id), payload);
+                      if (!result.success) {
+                        throw new Error(result.error || 'Falha ao salvar');
                       }
                       toast.success('Lead atualizado');
                       try {

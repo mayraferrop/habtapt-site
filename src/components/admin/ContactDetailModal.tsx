@@ -18,6 +18,8 @@ import {
 } from '../icons';
 import { toast } from 'sonner';
 import { supabaseFetch } from '../../utils/supabase/client';
+import { updateContact, createActivity, deleteActivity } from '../../lib/actions/contacts';
+import { createFollowup, updateFollowup, deleteFollowup } from '../../lib/actions/followups';
 import { colors, spacing, shadows, radius, typography } from '../../utils/styles';
 import { designSystem } from '../design-system';
 import type { Contact, Followup, FollowupType, FollowupPriority, FollowupOutcome } from './types';
@@ -109,18 +111,15 @@ export function ContactDetailModal({
   const handleAddFollowup = async () => {
     if (!newFollowup.title.trim() || !newFollowup.dueDate) { toast.error('Título e data são obrigatórios'); return; }
     try {
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups`, {
-        method: 'POST',
-        body: JSON.stringify({
-          title: newFollowup.title.trim(),
-          type: newFollowup.type,
-          dueDate: newFollowup.dueDate,
-          dueTime: newFollowup.dueTime || undefined,
-          priority: newFollowup.priority,
-          notes: newFollowup.notes.trim() || undefined,
-        }),
+      const result = await createFollowup(normalizeId(contact.id), {
+        title: newFollowup.title.trim(),
+        type: newFollowup.type,
+        dueDate: newFollowup.dueDate,
+        dueTime: newFollowup.dueTime || undefined,
+        priority: newFollowup.priority,
+        notes: newFollowup.notes.trim() || undefined,
       });
-      if (!res.ok) throw new Error('Erro ao criar follow-up');
+      if (!result.success) throw new Error(result.error || 'Erro ao criar follow-up');
       toast.success('Follow-up criado');
       setNewFollowup({ title: '', type: 'call', dueDate: new Date().toISOString().slice(0, 10), dueTime: '', priority: 'medium', notes: '' });
       fetchFollowups();
@@ -140,23 +139,17 @@ export function ContactDetailModal({
     try {
       const contactId = normalizeId(contact.id);
       // 1. Complete follow-up
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(contactId)}/followups/${followupId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'completed', outcomeNotes: completionText.trim() }),
-      });
-      if (!res.ok) throw new Error('Erro ao concluir follow-up');
+      const result = await updateFollowup(contactId, followupId, { status: 'completed', outcomeNotes: completionText.trim() });
+      if (!result.success) throw new Error(result.error || 'Erro ao concluir follow-up');
 
       // 2. Auto-create activity
       const fu = followups.find((f) => f.id === followupId);
       const channel = fu ? TYPE_TO_CHANNEL[fu.type] || 'Mensagem' : 'Mensagem';
-      await supabaseFetch(`contacts/${encodeURIComponent(contactId)}/activities`, {
-        method: 'POST',
-        body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
-          channel,
-          type: 'Follow-up',
-          content: `FU: ${fu?.title || 'Follow-up'} — ${completionText.trim()}`,
-        }),
+      await createActivity(contactId, {
+        date: new Date().toISOString().slice(0, 10),
+        channel,
+        type: 'Follow-up',
+        content: `FU: ${fu?.title || 'Follow-up'} — ${completionText.trim()}`,
       });
 
       toast.success('Follow-up concluído + atividade registada');
@@ -169,8 +162,8 @@ export function ContactDetailModal({
 
   const handleDeleteFollowup = async (followupId: string) => {
     try {
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/followups/${followupId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Erro ao eliminar');
+      const result = await deleteFollowup(normalizeId(contact.id), followupId);
+      if (!result.success) throw new Error(result.error || 'Erro ao eliminar');
       toast.success('Follow-up eliminado');
       fetchFollowups();
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro'); }
@@ -191,8 +184,8 @@ export function ContactDetailModal({
   const handleAddActivity = async () => {
     if (!newActivity.channel || !newActivity.content.trim()) { toast.error('Canal e conteúdo são obrigatórios'); return; }
     try {
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/activities`, { method: 'POST', body: JSON.stringify(newActivity) });
-      if (!res.ok) throw new Error('Erro ao criar atividade');
+      const result = await createActivity(normalizeId(contact.id), newActivity);
+      if (!result.success) throw new Error(result.error || 'Erro ao criar atividade');
       toast.success('Atividade registada');
       setNewActivity({ date: new Date().toISOString().slice(0, 10), channel: '', type: '', content: '' });
       fetchActivities();
@@ -201,8 +194,8 @@ export function ContactDetailModal({
 
   const handleDeleteActivity = async (activityId: string) => {
     try {
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}/activities/${activityId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Erro ao eliminar');
+      const result = await deleteActivity(normalizeId(contact.id), activityId);
+      if (!result.success) throw new Error(result.error || 'Erro ao eliminar');
       toast.success('Atividade eliminada');
       fetchActivities();
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro'); }
@@ -221,13 +214,9 @@ export function ContactDetailModal({
         maxBudget: form.maxBudget.trim(),
         typology: form.typology.trim(),
       };
-      const response = await supabaseFetch(`contacts/${encodeURIComponent(normalizeId(contact.id))}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || `Erro HTTP ${response.status}`);
+      const result = await updateContact(normalizeId(contact.id), payload);
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao salvar');
       }
       toast.success('Contacto atualizado');
       setIsEditMode(false);

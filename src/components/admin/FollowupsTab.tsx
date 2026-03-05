@@ -6,6 +6,8 @@ import { colors, spacing, radius, typography, shadows } from '../../utils/styles
 import { designSystem } from '../design-system';
 import { supabaseFetch } from '../../utils/supabase/client';
 import { toast } from 'sonner';
+import { createActivity } from '../../lib/actions/contacts';
+import { updateFollowup, deleteFollowup } from '../../lib/actions/followups';
 
 type FollowupType = 'call' | 'email' | 'whatsapp' | 'meeting' | 'task';
 type FollowupPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -149,22 +151,16 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
     try {
       const contactId = normalizeId(fu.contactId);
       // 1. Complete follow-up
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(contactId)}/followups/${fu.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'completed', outcomeNotes: completionText.trim() }),
-      });
-      if (!res.ok) throw new Error('Erro ao concluir follow-up');
+      const result = await updateFollowup(contactId, fu.id, { status: 'completed', outcomeNotes: completionText.trim() });
+      if (!result.success) throw new Error(result.error || 'Erro ao concluir follow-up');
 
       // 2. Auto-create activity
       const channel = TYPE_TO_CHANNEL[fu.type] || 'Mensagem';
-      await supabaseFetch(`contacts/${encodeURIComponent(contactId)}/activities`, {
-        method: 'POST',
-        body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
-          channel,
-          type: 'Follow-up',
-          content: `FU: ${fu.title} — ${completionText.trim()}`,
-        }),
+      await createActivity(contactId, {
+        date: new Date().toISOString().slice(0, 10),
+        channel,
+        type: 'Follow-up',
+        content: `FU: ${fu.title} — ${completionText.trim()}`,
       });
 
       toast.success('Follow-up concluído + atividade registada');
@@ -180,8 +176,8 @@ export function FollowupsTab({ contacts, onRefresh }: FollowupsTabProps) {
   const handleDelete = async (fu: Followup) => {
     try {
       const contactId = normalizeId(fu.contactId);
-      const res = await supabaseFetch(`contacts/${encodeURIComponent(contactId)}/followups/${fu.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Erro ao eliminar');
+      const result = await deleteFollowup(contactId, fu.id);
+      if (!result.success) throw new Error(result.error || 'Erro ao eliminar');
       toast.success('Follow-up eliminado');
       fetchPending();
       onRefresh?.();

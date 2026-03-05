@@ -4,7 +4,11 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Edit, Trash2, Save, X, ChevronLeft, ChevronRight } from '../../icons';
 import { toast } from 'sonner';
-import { supabaseFetch } from '../../../utils/supabase/client';
+import {
+  createWeeklyLog,
+  updateWeeklyLog,
+  deleteWeeklyLog as deleteWeeklyLogAction,
+} from '../../../lib/actions/controlo';
 import { colors, spacing, radius, typography, shadows } from '../../../utils/styles';
 import { designSystem } from '../../design-system';
 import { AnimatedButton } from '../../primitives/AnimatedButton';
@@ -185,14 +189,12 @@ export function WeeklyLogView({ projectId, units, weeklyLogs, onRefresh }: Weekl
     try {
       const payload = { ...form, projectId, weekStart, weekEnd };
       if (editingLog) {
-        await supabaseFetch(`controlo/weeklylogs/${editingLog.id}?projectId=${projectId}`, {
-          method: 'PUT', body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await updateWeeklyLog(editingLog.id, projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao atualizar registo'); return; }
         toast.success('Registo atualizado');
       } else {
-        await supabaseFetch('controlo/weeklylogs', {
-          method: 'POST', body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await createWeeklyLog(projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao criar registo'); return; }
         toast.success('Registo criado');
       }
       setModalOpen(false);
@@ -207,7 +209,8 @@ export function WeeklyLogView({ projectId, units, weeklyLogs, onRefresh }: Weekl
   const deleteLog = async (log: ControloWeeklyLog) => {
     if (!confirm('Eliminar este registo semanal?')) return;
     try {
-      await supabaseFetch(`controlo/weeklylogs/${log.id}?projectId=${projectId}`, { method: 'DELETE' }, 1, true);
+      const result = await deleteWeeklyLogAction(log.id, projectId);
+      if (!result.success) { toast.error(result.error || 'Erro ao eliminar registo'); return; }
       toast.success('Registo eliminado');
       onRefresh();
     } catch {

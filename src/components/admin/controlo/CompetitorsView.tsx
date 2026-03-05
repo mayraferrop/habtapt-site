@@ -4,7 +4,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Edit, Trash2, Save, X, ExternalLink } from '../../icons';
 import { toast } from 'sonner';
-import { supabaseFetch } from '../../../utils/supabase/client';
+import {
+  createCompetitor,
+  updateCompetitor,
+  deleteCompetitor as deleteCompetitorAction,
+} from '../../../lib/actions/controlo';
 import { colors, spacing, radius, typography, shadows } from '../../../utils/styles';
 import { designSystem } from '../../design-system';
 import { AnimatedButton } from '../../primitives/AnimatedButton';
@@ -127,14 +131,12 @@ export function CompetitorsView({ projectId, competitors, onRefresh }: Competito
     try {
       const payload = { ...form, projectId };
       if (editing) {
-        await supabaseFetch(`controlo/competitors/${editing.id}?projectId=${projectId}`, {
-          method: 'PUT', body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await updateCompetitor(editing.id, projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao atualizar concorrente'); return; }
         toast.success('Concorrente atualizado');
       } else {
-        await supabaseFetch('controlo/competitors', {
-          method: 'POST', body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await createCompetitor(projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao criar concorrente'); return; }
         toast.success('Concorrente adicionado');
       }
       setModalOpen(false);
@@ -149,7 +151,8 @@ export function CompetitorsView({ projectId, competitors, onRefresh }: Competito
   const deleteComp = async (comp: ControloCompetitor) => {
     if (!confirm(`Eliminar concorrente "${comp.development}"?`)) return;
     try {
-      await supabaseFetch(`controlo/competitors/${comp.id}?projectId=${projectId}`, { method: 'DELETE' }, 1, true);
+      const result = await deleteCompetitorAction(comp.id, projectId);
+      if (!result.success) { toast.error(result.error || 'Erro ao eliminar concorrente'); return; }
       toast.success('Concorrente eliminado');
       onRefresh();
     } catch {

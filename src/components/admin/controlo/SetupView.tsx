@@ -4,7 +4,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Edit, Trash2, Save, X } from '../../icons';
 import { toast } from 'sonner';
-import { supabaseFetch } from '../../../utils/supabase/client';
+import {
+  createUnit as createUnitAction,
+  updateUnit as updateUnitAction,
+  deleteUnit as deleteUnitAction,
+  updateTargets as updateTargetsAction,
+  createReview as createReviewAction,
+  updateReview as updateReviewAction,
+  deleteReview as deleteReviewAction,
+} from '../../../lib/actions/controlo';
 import { colors, spacing, radius, typography, shadows } from '../../../utils/styles';
 import { designSystem } from '../../design-system';
 import { AnimatedButton } from '../../primitives/AnimatedButton';
@@ -232,16 +240,12 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
     try {
       const payload = { ...unitForm, projectId };
       if (editingUnit) {
-        await supabaseFetch(`controlo/units/${editingUnit.id}?projectId=${projectId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await updateUnitAction(editingUnit.id, projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao atualizar unidade'); return; }
         toast.success('Unidade atualizada');
       } else {
-        await supabaseFetch('controlo/units', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await createUnitAction(projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao criar unidade'); return; }
         toast.success('Unidade criada');
       }
       setUnitModal(false);
@@ -253,10 +257,11 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
     }
   };
 
-  const deleteUnit = async (unit: ControloUnit) => {
+  const handleDeleteUnit = async (unit: ControloUnit) => {
     if (!confirm(`Eliminar unidade ${unit.code}?`)) return;
     try {
-      await supabaseFetch(`controlo/units/${unit.id}?projectId=${projectId}`, { method: 'DELETE' }, 1, true);
+      const result = await deleteUnitAction(unit.id, projectId);
+      if (!result.success) { toast.error(result.error || 'Erro ao eliminar unidade'); return; }
       toast.success('Unidade eliminada');
       onRefresh();
     } catch {
@@ -268,10 +273,8 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
   const saveTargets = async () => {
     setTargetsSaving(true);
     try {
-      await supabaseFetch(`controlo/targets?projectId=${projectId}`, {
-        method: 'PUT',
-        body: JSON.stringify(targetsForm),
-      }, 1, true);
+      const result = await updateTargetsAction(projectId, targetsForm);
+      if (!result.success) { toast.error(result.error || 'Erro ao guardar metas'); return; }
       toast.success('Metas atualizadas');
       onRefresh();
     } catch {
@@ -308,16 +311,12 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
     try {
       const payload = { ...reviewForm, projectId };
       if (editingReview) {
-        await supabaseFetch(`controlo/reviews/${editingReview.id}?projectId=${projectId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await updateReviewAction(editingReview.id, projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao atualizar revisão'); return; }
         toast.success('Data de revisão atualizada');
       } else {
-        await supabaseFetch('controlo/reviews', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        }, 1, true);
+        const result = await createReviewAction(projectId, payload);
+        if (!result.success) { toast.error(result.error || 'Erro ao criar revisão'); return; }
         toast.success('Data de revisão criada');
       }
       setReviewModal(false);
@@ -329,10 +328,11 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
     }
   };
 
-  const deleteReview = async (review: ControloReviewDate) => {
+  const handleDeleteReview = async (review: ControloReviewDate) => {
     if (!confirm(`Eliminar data "${review.label}"?`)) return;
     try {
-      await supabaseFetch(`controlo/reviews/${review.id}?projectId=${projectId}`, { method: 'DELETE' }, 1, true);
+      const result = await deleteReviewAction(review.id, projectId);
+      if (!result.success) { toast.error(result.error || 'Erro ao eliminar revisão'); return; }
       toast.success('Data de revisão eliminada');
       onRefresh();
     } catch {
@@ -400,7 +400,7 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                           <Edit size={16} style={{ color: colors.primary }} />
                         </button>
                         <button
-                          onClick={() => deleteUnit(u)}
+                          onClick={() => handleDeleteUnit(u)}
                           style={iconBtnStyle}
                           aria-label="Eliminar unidade"
                         >
@@ -552,7 +552,7 @@ export function SetupView({ projectId, units, targets, reviews, onRefresh }: Set
                         <button onClick={() => openReviewModal(r)} style={iconBtnStyle} aria-label="Editar">
                           <Edit size={16} style={{ color: colors.primary }} />
                         </button>
-                        <button onClick={() => deleteReview(r)} style={iconBtnStyle} aria-label="Eliminar">
+                        <button onClick={() => handleDeleteReview(r)} style={iconBtnStyle} aria-label="Eliminar">
                           <Trash2 size={16} style={{ color: colors.error }} />
                         </button>
                       </div>

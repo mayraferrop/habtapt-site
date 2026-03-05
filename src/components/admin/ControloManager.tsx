@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Settings, Target, Calendar, BarChart3, Plus, Trash2, X } from '../icons';
 import { toast } from 'sonner';
 import { supabaseFetch } from '../../utils/supabase/client';
+import { createControloProject, deleteControloProject } from '../../lib/actions/controlo';
 import { colors, spacing, radius, typography, shadows } from '../../utils/styles';
 import { designSystem } from '../design-system';
 import { SetupView } from './controlo/SetupView';
@@ -195,14 +196,9 @@ export function ControloManager() {
     }
     setIsSavingProject(true);
     try {
-      const res = await supabaseFetch('controlo/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: slug, label }),
-      }, 1, true);
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Erro ao criar projeto');
+      const result = await createControloProject({ id: slug, label });
+      if (!result.success) {
+        toast.error(result.error || 'Erro ao criar projeto');
         return;
       }
       toast.success(`Projeto "${label}" criado`);
@@ -221,9 +217,9 @@ export function ControloManager() {
   const handleDeleteProject = async (id: string) => {
     if (!confirm('Tem a certeza que deseja eliminar este projeto de controlo?')) return;
     try {
-      const res = await supabaseFetch(`controlo/projects/${id}`, { method: 'DELETE' }, 1, true);
-      if (!res.ok) {
-        toast.error('Erro ao eliminar projeto');
+      const result = await deleteControloProject(id);
+      if (!result.success) {
+        toast.error(result.error || 'Erro ao eliminar projeto');
         return;
       }
       toast.success('Projeto eliminado');
