@@ -186,7 +186,7 @@ export function UnitsManager({ onRefresh }: UnitsManagerProps) {
       const response = await supabaseFetch('projects', {}, 2, true);
       const data = await response.json();
       if (data.success && data.projects) {
-        setProjects(data.projects.map((p: any) => ({ id: p.id, title: p.title })));
+        setProjects(data.projects.map((p: { id: string; title: string }) => ({ id: p.id, title: p.title })));
       }
     } catch (error) {
       console.error('Error fetching projects:', error);

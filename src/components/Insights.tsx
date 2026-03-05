@@ -98,7 +98,7 @@ export function Insights() {
         const data = await response.json();
 
         // Map server data to component format
-        const mappedInsights = (data.insights || []).map((insight: any) => {
+        const mappedInsights = (data.insights || []).map((insight: { id: string; icon: string; title: string; description: string; category: string; readTime: string; gradient: string; iconColor: string }) => {
           let IconComponent = TrendingUp;
           if (insight.icon === 'Building2') IconComponent = Building2;
           else if (insight.icon === 'Leaf') IconComponent = Leaf;

@@ -190,7 +190,7 @@ export function Portfolio({ variant = 'full' }: PortfolioProps) {
           const data = await response.json();
           if (data.success && data.projects && data.projects.length > 0) {
             // Validar status
-            data.projects.forEach((p: any) => {
+            data.projects.forEach((p: Project) => {
               if (!['analysis', 'in-progress', 'available', 'sold'].includes(p.status)) {
               }
             });

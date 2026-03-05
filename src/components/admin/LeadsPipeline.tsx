@@ -613,7 +613,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
         method: 'PUT',
         body: JSON.stringify({ pipelineStage: stageId }),
       });
-      let data: any = null;
+      let data: { error?: string } | null = null;
       try {
         data = await response.json();
       } catch {}
@@ -1802,7 +1802,7 @@ export function LeadsPipeline({ contacts, onRefresh }: LeadsPipelineProps) {
                         method: 'PUT',
                         body: JSON.stringify(payload),
                       });
-                      let data: any = null;
+                      let data: { error?: string } | null = null;
                       try {
                         data = await response.json();
                       } catch {}
