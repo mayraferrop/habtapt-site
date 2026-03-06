@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { useInView } from '@/components/useInView';
 import { CheckCircle, Send, MessageCircle, Mail } from '@/components/icons';
 import { Logo } from '@/components/Logo';
-import { supabaseFetch } from '@/utils/supabase/client';
+import { submitContact } from '@/lib/actions/contact';
 import { ds, c, t, sp, sectionTitle, ctaButtonPrimary, inputStyle } from './velask-styles';
 
 interface VelaskContactFormProps {
@@ -40,24 +40,17 @@ export function VelaskContactForm({ isMobile, selectedTypology = '' }: VelaskCon
         unsure: 'Todos / Ainda não sei',
       };
 
-      const response = await supabaseFetch('contact', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: formData.name,
-          email: `velask-${Date.now()}@lead.habta.eu`,
-          phone: formData.phone,
-          interest: 'Velask Residence',
-          message: `Tipologia: ${typologyLabels[formData.typology] || formData.typology}. Telefone: ${formData.phone}`,
-          source: 'velask-landing',
-          projectId: 'velask',
-        }),
+      await submitContact({
+        name: formData.name,
+        email: `velask-${Date.now()}@lead.habta.eu`,
+        phone: formData.phone,
+        interest: 'Velask Residence',
+        message: `Tipologia: ${typologyLabels[formData.typology] || formData.typology}. Telefone: ${formData.phone}`,
+        source: 'velask-landing',
+        projectId: 'velask',
       });
 
-      if (response.ok) {
-        setFormSubmitted(true);
-      } else {
-        setFormSubmitted(true);
-      }
+      setFormSubmitted(true);
     } catch {
       setFormSubmitted(true);
     } finally {

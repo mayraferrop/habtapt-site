@@ -1,6 +1,7 @@
 'use server';
 
 import { getSupabaseServiceClient } from '@/lib/supabaseServer';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface NewsletterData {
   email: string;
@@ -51,5 +52,31 @@ export async function subscribeNewsletter(data: NewsletterData): Promise<ActionR
     return { success: true, message: 'Subscrição confirmada! Verifique o seu email.' };
   } catch {
     return { success: false, error: 'Erro inesperado ao assinar newsletter.' };
+  }
+}
+
+export async function deleteSubscriber(id: string): Promise<ActionResult> {
+  if (!id || typeof id !== 'string') {
+    return { success: false, error: 'ID do assinante é obrigatório.' };
+  }
+
+  try {
+    const url = `https://${projectId}.supabase.co/functions/v1/make-server-4b2936bc/subscribers/${encodeURIComponent(id)}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Erro ao excluir assinante.' };
+    }
+
+    return { success: true, message: 'Assinante excluído com sucesso!' };
+  } catch {
+    return { success: false, error: 'Erro de conexão ao excluir assinante.' };
   }
 }

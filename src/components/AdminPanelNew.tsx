@@ -43,6 +43,7 @@ import { SubscribersView } from './admin/SubscribersView';
 import type { Project } from '@/types/project';
 import type { Contact, Followup, Subscriber, Insight } from './admin/types';
 import { logError } from '../utils/error-logger';
+import { deleteSubscriber as deleteSubscriberAction } from '@/lib/actions/newsletter';
 
 export function AdminPanel() {
   const router = useRouter();
@@ -303,24 +304,14 @@ export function AdminPanel() {
     }
 
     try {
-      const response = await supabaseFetch(`subscribers/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await deleteSubscriberAction(id);
 
-      if (response.ok) {
-        const data = await response.json();
-
-        // Atualizar o estado local removendo o subscriber
-        setSubscribers(prev => {
-          const updated = prev.filter(sub => sub.id !== id);
-          return updated;
-        });
-
+      if (result.success) {
+        setSubscribers(prev => prev.filter(sub => sub.id !== id));
         toast.success('Assinante excluído com sucesso!');
       } else {
-        const data = await response.json();
-        logError(data.error || 'Erro na resposta', { component: 'AdminPanel', action: 'deleteSubscriber', metadata: { data } });
-        toast.error(data.error || 'Erro ao excluir assinante');
+        logError(result.error || 'Erro na resposta', { component: 'AdminPanel', action: 'deleteSubscriber' });
+        toast.error(result.error || 'Erro ao excluir assinante');
       }
     } catch (error) {
       logError(error, { component: 'AdminPanel', action: 'deleteSubscriber' });

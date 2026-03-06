@@ -9,6 +9,8 @@ interface ContactData {
   interest: string;
   message: string;
   sourceUrl?: string;
+  source?: string;
+  projectId?: string;
 }
 
 interface ActionResult {
@@ -55,7 +57,11 @@ export async function submitContact(data: ContactData): Promise<ActionResult> {
         'Authorization': `Bearer ${publicAnonKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, email, phone, interest, message, sourceUrl }),
+      body: JSON.stringify({
+        name, email, phone, interest, message, sourceUrl,
+        ...(data.source ? { source: data.source } : {}),
+        ...(data.projectId ? { projectId: data.projectId } : {}),
+      }),
     });
 
     const responseData = await response.json();
