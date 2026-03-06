@@ -99,6 +99,9 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
+        <Script id="atd-err" strategy="lazyOnload">{`
+          (function(){var o=console.error;console.error=function(){var a=[].slice.call(arguments).join(' ');if(a.indexOf('Atendimento Widget')!==-1||a.indexOf('atendeaqui')!==-1)return;o.apply(console,arguments)}})();
+        `}</Script>
         <Script
           src="https://widget.atendeaqui.ai/widget.js"
           data-tenant="habta"
