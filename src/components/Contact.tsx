@@ -5,7 +5,6 @@ import { Container } from './Container';
 import { Section } from './Section';
 import { Mail, Phone, MapPin, Send, Clock, MessageSquare, ChevronDown, HelpCircle } from './icons';
 import { useInView } from './useInView';
-import { toast } from 'sonner';
 import { designSystem } from './design-system';
 import { submitContact } from '../lib/actions/contact';
 
@@ -80,7 +79,7 @@ export function Contact() {
     
     if (hasErrors) {
       setFormErrors(newErrors);
-      toast.error('Por favor, corrija os campos destacados.');
+      import('sonner').then(({ toast }) => toast.error('Por favor, corrija os campos destacados.'));
       return;
     }
     
@@ -94,11 +93,13 @@ export function Contact() {
 
       if (!result.success) {
         console.error('Contact form submission error:', result.error);
+        const { toast } = await import('sonner');
         toast.error(result.error || 'Erro ao enviar mensagem. Tente novamente.');
         setIsSubmitting(false);
         return;
       }
 
+      const { toast } = await import('sonner');
       toast.success(result.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
       
       setFormData({
@@ -110,7 +111,7 @@ export function Contact() {
       });
     } catch (error) {
       console.error('Contact form network error:', error);
-      toast.error('Erro de conexão. Verifique a sua internet e tente novamente.');
+      import('sonner').then(({ toast }) => toast.error('Erro de conexão. Verifique a sua internet e tente novamente.'));
     } finally {
       setIsSubmitting(false);
     }

@@ -2,7 +2,6 @@ import React from 'react';
 import { Container } from './Container';
 import { ArrowRight } from './icons';
 import { designSystem } from './design-system';
-import { LogoPattern } from './LogoPatterns';
 import Link from 'next/link';
 
 export function Hero() {
@@ -26,7 +25,7 @@ export function Hero() {
           height={900}
           alt="VELASK Residence - fachada do empreendimento"
           fetchPriority="high"
-          decoding="sync"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div
@@ -34,18 +33,6 @@ export function Hero() {
           style={{
             background: 'linear-gradient(180deg, rgba(26, 62, 92, 0.82) 0%, rgba(26, 62, 92, 0.55) 40%, rgba(26, 62, 92, 0.88) 100%)',
           }}
-        />
-      </div>
-
-      {/* Logo Pattern overlay */}
-      <div
-        className="absolute inset-0 anim-fade-in"
-        style={{ zIndex: 1 }}
-      >
-        <LogoPattern
-          pattern="arrows-tiny"
-          opacity={0.06}
-          color={designSystem.colors.neutral.white}
         />
       </div>
 
