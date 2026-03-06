@@ -104,6 +104,7 @@ export function Footer() {
                     <li key={link.label}>
                       <Link
                         href={link.href}
+                        prefetch={false}
                         className="text-white/80 hover:text-white transition-colors duration-200 inline-flex items-center"
                         style={{ textDecoration: 'none', font: 'inherit', minHeight: '44px' }}
                       >

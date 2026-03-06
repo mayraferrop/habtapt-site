@@ -157,7 +157,7 @@ export function Hero() {
                 gap: designSystem.spacing[4],
               }}
             >
-              <Link href="/velask" style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
+              <Link href="/velask" prefetch={false} style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
                 <span
                   className="group inline-flex items-center justify-center rounded-full w-full sm:w-auto hover-lift"
                   style={{
@@ -182,7 +182,7 @@ export function Hero() {
                 </span>
               </Link>
 
-              <Link href="/portfolio" style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
+              <Link href="/portfolio" prefetch={false} style={{ textDecoration: 'none', width: 'auto' }} className="w-full sm:w-auto">
                 <span
                   className="inline-flex items-center justify-center rounded-full backdrop-blur-md w-full sm:w-auto hover-lift"
                   style={{

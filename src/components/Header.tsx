@@ -134,6 +134,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   aria-current={isActive ? 'page' : undefined}
                   style={{ textDecoration: 'none' }}
                 >
@@ -250,7 +251,7 @@ export function Header() {
               {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
-                  <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
+                  <Link key={item.href} href={item.href} prefetch={false} style={{ textDecoration: 'none' }}>
                     <span
                       className="block active:scale-[0.98] transition-transform"
                       style={{

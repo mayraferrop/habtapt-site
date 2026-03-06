@@ -47,7 +47,7 @@ export function DualCTA() {
           }}
         >
           {/* Quero Morar */}
-          <Link href="/portfolio" style={{ textDecoration: 'none' }}>
+          <Link href="/portfolio" prefetch={false} style={{ textDecoration: 'none' }}>
             <div
               className="hover-lift"
               style={{
@@ -122,7 +122,7 @@ export function DualCTA() {
           </Link>
 
           {/* Quero Investir */}
-          <Link href="/portfolio" style={{ textDecoration: 'none' }}>
+          <Link href="/portfolio" prefetch={false} style={{ textDecoration: 'none' }}>
             <div
               className="hover-lift"
               style={{
