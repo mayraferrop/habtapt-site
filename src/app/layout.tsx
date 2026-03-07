@@ -95,12 +95,8 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-ZKN7PMCDBP"
-          strategy="lazyOnload"
-        />
-        <Script id="gtag-init" strategy="lazyOnload">{`
-          window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZKN7PMCDBP');
+        <Script id="ga4-deferred" strategy="lazyOnload">{`
+          (function(){var l=false;function g(){if(l)return;l=true;var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-ZKN7PMCDBP';document.head.appendChild(s);window.dataLayer=window.dataLayer||[];function t(){dataLayer.push(arguments)}t('js',new Date());t('config','G-ZKN7PMCDBP')}['scroll','click','touchstart'].forEach(function(e){document.addEventListener(e,g,{once:true,passive:true})});setTimeout(g,8000)})();
         `}</Script>
         <Script id="atd-err" strategy="lazyOnload">{`
           (function(){var o=console.error;console.error=function(){var a=[].slice.call(arguments).join(' ');if(a.indexOf('Atendimento Widget')!==-1||a.indexOf('atendeaqui')!==-1)return;o.apply(console,arguments)}})();
