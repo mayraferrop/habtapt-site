@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "browserslist": [
-    "Chrome >= 93",
-    "Firefox >= 92",
-    "Safari >= 15.4",
-    "Edge >= 93",
+    "Chrome >= 105",
+    "Firefox >= 104",
+    "Safari >= 16",
+    "Edge >= 105",
     "not dead",
     "not op_mini all"
   ],
