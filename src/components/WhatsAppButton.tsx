@@ -37,12 +37,13 @@ export function WhatsAppButton() {
 
   const handleChat = useCallback(() => {
     setIsOpen(false);
-    const btn = document.getElementById('atd-widget-btn') as HTMLButtonElement | null;
-    if (btn) {
-      // Temporarily make it clickable, click it, then re-hide
-      btn.style.cssText = 'display:block!important;visibility:visible!important;pointer-events:auto!important;opacity:0;position:fixed;bottom:-100px';
-      btn.click();
-      setTimeout(() => { btn.style.cssText = ''; }, 200);
+    // Try widget API first, fallback to button click
+    const w = (window as any).AtendimentoWidget;
+    if (w && typeof w.open === 'function') {
+      w.open();
+    } else {
+      const btn = document.getElementById('atd-widget-btn') as HTMLButtonElement | null;
+      if (btn) btn.click();
     }
   }, []);
 

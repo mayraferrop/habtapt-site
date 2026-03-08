@@ -107,8 +107,8 @@ export default function RootLayout({
           data-channel="web"
           strategy="lazyOnload"
         />
-        <Script id="atd-a11y" strategy="lazyOnload">{`
-          (function(){var b=document.getElementById('atd-widget-btn');if(b){b.setAttribute('aria-label','Abrir chat de apoio')}else{new MutationObserver(function(m,o){var b=document.getElementById('atd-widget-btn');if(b){b.setAttribute('aria-label','Abrir chat de apoio');o.disconnect()}}).observe(document.body,{childList:true,subtree:true})}})();
+        <Script id="atd-hide" strategy="lazyOnload">{`
+          (function(){function h(b){b.style.cssText='position:fixed!important;bottom:-9999px!important;right:-9999px!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;overflow:hidden!important';b.setAttribute('aria-hidden','true');b.setAttribute('aria-label','Abrir chat de apoio')}var b=document.getElementById('atd-widget-btn');if(b){h(b)}new MutationObserver(function(){var b=document.getElementById('atd-widget-btn');if(b)h(b)}).observe(document.body,{childList:true,subtree:true,attributes:true})})();
         `}</Script>
       </body>
     </html>
