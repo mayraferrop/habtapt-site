@@ -102,69 +102,6 @@ const breadcrumbJsonLd = {
   ],
 };
 
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'Posso visitar o apartamento?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Sim. Agende uma visita através do formulário, WhatsApp ou email. Segunda a sexta, das 9h às 18h.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Os apartamentos têm cozinha equipada?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Sim. Todos os apartamentos são entregues com cozinha totalmente equipada.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Há possibilidade de financiamento bancário?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Sim. Os apartamentos são elegíveis para crédito habitação. Podemos encaminhá-lo para o nosso parceiro financeiro para uma simulação gratuita.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Qual a data de entrega?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'A obra estará concluída em aproximadamente 60 dias. Contacte-nos para reservar já a sua fração.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Qual a certificação energética?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'A certificação energética está em processo de emissão. Disponível em breve.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Quem é a HABTA?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'A HABTA é um grupo imobiliário de alta performance. O Velask é o nosso primeiro projeto de reabilitação no Porto — entregue com o mesmo rigor de processo que aplicamos a todos os nossos empreendimentos.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Posso fazer uma proposta diferente do preço?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Fale connosco. Analisamos cada situação individualmente.',
-      },
-    },
-  ],
-};
-
 export default function VelaskLayout({
   children,
 }: {
@@ -182,7 +119,7 @@ export default function VelaskLayout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([realEstateListingJsonLd, breadcrumbJsonLd, faqJsonLd]),
+          __html: JSON.stringify([realEstateListingJsonLd, breadcrumbJsonLd]),
         }}
       />
       {children}
