@@ -16,7 +16,19 @@ function getApiRateConfig(pathname: string) {
   return null;
 }
 
+const CANONICAL_HOST = 'habta.eu';
+
 export async function middleware(request: NextRequest) {
+  // 301 redirect non-canonical domains (e.g. habta.pt) to habta.eu
+  const host = request.headers.get('host')?.replace(/:\d+$/, '');
+  if (host && host !== CANONICAL_HOST && host !== 'localhost') {
+    const url = new URL(request.url);
+    url.host = CANONICAL_HOST;
+    url.protocol = 'https';
+    url.port = '';
+    return NextResponse.redirect(url.toString(), 301);
+  }
+
   // Rate limit API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const ip = request.headers.get('cf-connecting-ip')
@@ -112,5 +124,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/api/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico, sitemap.xml, robots.txt (static meta files)
+     * - Static assets (images, fonts, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)).*)',
+  ],
 };
