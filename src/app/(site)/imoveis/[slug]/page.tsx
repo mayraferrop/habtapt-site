@@ -1,11 +1,69 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import PropertyDetailContent from './_components/PropertyDetailContent';
+import { fetchPropertyBySlug } from '../_lib/fetchProperties';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+
 export const runtime = 'edge';
+
+const SUPABASE_URL = `https://${projectId}.supabase.co`;
+const FUNCTION_PATH = 'functions/v1/make-server-4b2936bc';
+
+async function fetchPropertyForMetadata(slug: string) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/${FUNCTION_PATH}/projects/by-slug/${encodeURIComponent(slug)}`, {
+      headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.project || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params;
+  const project = await fetchPropertyForMetadata(slug);
+
+  if (project) {
+    const title = project.metaTitle || project.title;
+    const description = project.metaDescription
+      || project.shortDescription
+      || `${project.title} — Imóvel HABTA em ${project.location || 'Portugal'}`;
+
+    return {
+      title,
+      description,
+      alternates: { canonical: `https://habta.eu/imoveis/${slug}` },
+      openGraph: {
+        title: `${title} | HABTA`,
+        description,
+        type: 'article',
+        locale: 'pt_PT',
+        siteName: 'HABTA',
+        url: `https://habta.eu/imoveis/${slug}`,
+        ...(project.image ? { images: [{ url: project.image, width: 1200, height: 630, alt: title }] } : {}),
+      },
+    };
+  }
+
+  return {
+    title: 'Imóvel | HABTA',
+    description: 'Imóvel exclusivo HABTA.',
+    alternates: { canonical: `https://habta.eu/imoveis/${slug}` },
+  };
+}
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Imóvel: {slug}</h1>
-      <p>Teste mínimo de edge runtime.</p>
-    </div>
-  );
+  const property = await fetchPropertyBySlug(slug);
+
+  if (!property) {
+    notFound();
+  }
+
+  return <PropertyDetailContent property={property} />;
 }
