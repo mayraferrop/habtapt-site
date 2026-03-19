@@ -44,7 +44,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    return [];
+    return [
+      {
+        source: '/imoveis',
+        destination: '/portfolio',
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [
