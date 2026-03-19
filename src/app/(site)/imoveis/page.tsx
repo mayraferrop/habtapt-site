@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
 import { fetchProperties } from './_lib/fetchProperties';
-// Lazy import to debug Cloudflare Pages edge runtime crash
-import dynamic from 'next/dynamic';
-const PropertyListContent = dynamic(() => import('./_components/PropertyListContent'), { ssr: true });
-
-export const runtime = 'edge';
+import PropertyListContent from './_components/PropertyListContent';
 
 export const metadata: Metadata = {
   title: 'Imóveis | HABTA',
@@ -33,22 +29,10 @@ const breadcrumbJsonLd = {
 
 export default async function ImoveisPage() {
   let properties: Awaited<ReturnType<typeof fetchProperties>> = [];
-  let fetchError = '';
   try {
     properties = await fetchProperties();
   } catch (err) {
-    fetchError = err instanceof Error ? err.message : String(err);
-    console.error('[ImoveisPage] Error fetching properties:', err);
-  }
-
-  if (fetchError) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Imóveis HABTA</h1>
-        <p>Erro ao carregar imóveis. Tente novamente mais tarde.</p>
-        <p style={{ fontSize: '0.75rem', color: '#999' }}>{fetchError}</p>
-      </div>
-    );
+    console.error('[ImoveisPage] Error:', err);
   }
 
   return (
