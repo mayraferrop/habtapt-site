@@ -111,7 +111,7 @@ export function Header() {
           >
             <div className="flex items-center transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]">
               <img
-                src={showSolid ? '/logo-dark.svg' : '/logo-white.svg'}
+                src={showSolid ? '/logo-dark.svg?v=2' : '/logo-white.svg?v=2'}
                 alt="HABTA"
                 height={48}
                 style={{ height: 48, width: 'auto', transition: designSystem.animations.transition.base }}
