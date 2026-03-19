@@ -58,23 +58,27 @@ export function Footer() {
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 mb-12">
             {/* Brand Column */}
             <div className="lg:col-span-2">
-              <div className="mb-6">
+              <div className="mb-4">
                 <img
-                  src="/logo-white-full.svg?v=2"
-                  alt="HABTA — Every Home, Productized"
-                  height={60}
-                  style={{ height: 60, width: 'auto' }}
+                  src="/logo-white.svg?v=3"
+                  alt="HABTA"
+                  height={48}
+                  style={{ height: 48, width: 'auto' }}
                 />
               </div>
               <p
                 style={{
-                  color: designSystem.helpers.hexToRgba(designSystem.colors.neutral.white, 0.8),
-                  lineHeight: designSystem.typography.lineHeight.relaxed,
+                  color: designSystem.colors.neutral.white,
+                  fontSize: designSystem.typography.fontSize.sm,
+                  fontWeight: designSystem.typography.fontWeight.semibold,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase' as const,
                   marginBottom: designSystem.spacing[6],
-                  maxWidth: '24rem'
+                  maxWidth: '24rem',
+                  opacity: 0.7,
                 }}
               >
-                Every Home, Productized.
+                EVERY HOME, PRODUCTIZED.
               </p>
               <div className="flex" style={{ gap: designSystem.spacing[3] }}>
                 {socialLinks.map((social) => (
