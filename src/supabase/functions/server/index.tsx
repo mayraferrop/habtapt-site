@@ -1,13 +1,98 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as kv from "./kv_store.tsx";
+
 const app = new Hono();
 
-// Enable logger
-app.use('*', logger(console.log));
+// ── Supabase client (service role for full access) ──
+const supabase = () =>
+  createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
 
-// Enable CORS for all routes and methods
+// ── Helpers: camelCase ↔ snake_case ──
+function toSnake(obj: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const sk = k.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
+    out[sk] = v;
+  }
+  return out;
+}
+
+function toCamel(obj: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const ck = k.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    out[ck] = v;
+  }
+  return out;
+}
+
+// Convert array of DB rows to camelCase
+function rowsToCamel(rows: any[]): any[] {
+  return rows.map(toCamel);
+}
+
+// ── Field map: KV field names → PostgreSQL column names (for projects) ──
+// Used during migration and for compatibility with existing frontend
+const projectKvToDb: Record<string, string> = {
+  image: "image_url",
+  statusLabel: "status_label",
+  timelinePhases: "timeline_phases",
+  portalLink: "portal_link",
+  brochureLink: "brochure_link",
+  landingPage: "landing_page",
+};
+
+// Reverse map for DB → response
+const projectDbToKv: Record<string, string> = {};
+for (const [k, v] of Object.entries(projectKvToDb)) {
+  projectDbToKv[v] = k;
+}
+
+// Transform incoming project data (camelCase/KV names) → DB columns
+function projectToDb(data: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined) continue;
+    // Use explicit mapping if exists, otherwise auto snake_case
+    const mapped = projectKvToDb[k];
+    if (mapped) {
+      out[mapped] = v;
+    } else {
+      out[k.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)] = v;
+    }
+  }
+  // Remove non-DB fields
+  delete out.timestamp;
+  return out;
+}
+
+// Transform DB row → response (camelCase, with KV-compat names)
+function projectFromDb(row: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(row)) {
+    // Use reverse mapping if exists, otherwise auto camelCase
+    const mapped = projectDbToKv[k];
+    if (mapped) {
+      out[mapped] = v;
+    } else {
+      out[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = v;
+    }
+  }
+  // Keep 'image' alias for frontend compat (in addition to imageUrl)
+  if (row.image_url && !out.image) {
+    out.image = row.image_url;
+  }
+  return out;
+}
+
+// ── Middleware ──
+app.use("*", logger(console.log));
 app.use(
   "/*",
   cors({
@@ -16,285 +101,241 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
-  }),
+  })
 );
 
-// Health check endpoint
+// ── Health ──
 app.get("/make-server-4b2936bc/health", (c) => {
-  return c.json({ status: "ok" });
+  return c.json({ status: "ok", backend: "postgresql" });
 });
 
-// Contact form submission endpoint
+// ============================================================================
+// CONTACTS (PostgreSQL: contacts table)
+// ============================================================================
+
 app.post("/make-server-4b2936bc/contact", async (c) => {
   try {
     const body = await c.req.json();
-    const { name, email, phone, interest, message, projectId, origin } = body;
+    const { name, email, phone, interest, message, projectId, origin, propertyId, propertyTitle, utmSource, utmMedium, utmCampaign } = body;
 
-    // Validation
     if (!name || !email || !phone || !interest || !message) {
-      console.log(`Contact form validation error: Missing required fields`);
       return c.json({ error: "Todos os campos são obrigatórios" }, 400);
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.log(`Contact form validation error: Invalid email format - ${email}`);
       return c.json({ error: "Email inválido" }, 400);
     }
 
-    const timestamp = Date.now();
-    const contactId = `contact:${timestamp}`;
+    // Calculate lead number
+    const { count } = await supabase().from("contacts").select("*", { count: "exact", head: true });
+    const leadNumber = (count || 0) + 1;
 
-    // Calculate leadNumber
-    const allContacts = await kv.getByPrefix("contact:");
-    const leadNumber = allContacts.length + 1;
-
-    const contactData = {
-      id: contactId,
+    const insertData: Record<string, any> = {
       name,
       email,
       phone,
       interest,
       message,
-      projectId: projectId || '',
-      origin: origin || '',
-      leadNumber,
-      createdAt: new Date().toISOString(),
-      timestamp,
+      pipeline_stage: "novo",
+      lead_number: leadNumber,
+      source: origin || "website",
     };
 
-    await kv.set(contactId, contactData);
-    console.log(`Contact form submitted successfully: ${contactId} - ${name} (${email})`);
+    // Property association (from landing page)
+    if (propertyId) insertData.property_id = propertyId;
+    if (propertyTitle) insertData.property_title = propertyTitle;
 
-    return c.json({ 
-      success: true, 
+    // Legacy source tracking
+    if (projectId) {
+      insertData.source_id = projectId;
+      insertData.source = "project";
+    }
+
+    // UTM tracking
+    if (utmSource) insertData.utm_source = utmSource;
+    if (utmMedium) insertData.utm_medium = utmMedium;
+    if (utmCampaign) insertData.utm_campaign = utmCampaign;
+
+    const { data, error } = await supabase()
+      .from("contacts")
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      console.log(`Contact insert error: ${error.message}`);
+      return c.json({ error: "Erro ao enviar mensagem. Tente novamente." }, 500);
+    }
+
+    console.log(`Contact created: ${data.id} - ${name} (${email})`);
+    return c.json({
+      success: true,
       message: "Mensagem enviada com sucesso! Entraremos em contato em breve.",
-      id: contactId 
+      id: data.id,
     });
   } catch (error) {
-    console.log(`Contact form submission error: ${error}`);
+    console.log(`Contact form error: ${error}`);
     return c.json({ error: "Erro ao enviar mensagem. Tente novamente." }, 500);
   }
 });
 
-// Newsletter subscription endpoint
-app.post("/make-server-4b2936bc/newsletter", async (c) => {
-  try {
-    const body = await c.req.json();
-    const { email } = body;
-
-    // Validation
-    if (!email) {
-      console.log(`Newsletter subscription error: Email is required`);
-      return c.json({ error: "Email é obrigatório" }, 400);
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log(`Newsletter subscription error: Invalid email format - ${email}`);
-      return c.json({ error: "Email inválido" }, 400);
-    }
-
-    const subscriberId = `newsletter:${email.toLowerCase()}`;
-
-    // Check if already subscribed
-    const existing = await kv.get(subscriberId);
-    if (existing) {
-      console.log(`Newsletter subscription: Already subscribed - ${email}`);
-      return c.json({ 
-        success: true, 
-        message: "Este email já está inscrito na nossa newsletter.",
-        alreadySubscribed: true 
-      });
-    }
-
-    const subscriptionData = {
-      id: subscriberId,
-      email: email.toLowerCase(),
-      subscribedAt: new Date().toISOString(),
-      timestamp: Date.now(),
-    };
-
-    await kv.set(subscriberId, subscriptionData);
-    console.log(`Newsletter subscription successful: ${email}`);
-
-    return c.json({ 
-      success: true, 
-      message: "Subscrição confirmada! Verifique o seu email.",
-      id: subscriberId 
-    });
-  } catch (error) {
-    console.log(`Newsletter subscription error: ${error}`);
-    return c.json({ error: "Erro ao processar subscrição. Tente novamente." }, 500);
-  }
-});
-
-// Get all contacts (admin endpoint)
 app.get("/make-server-4b2936bc/contacts", async (c) => {
   try {
-    const contacts = await kv.getByPrefix("contact:");
-    const sortedContacts = contacts.sort((a: any, b: any) => b.timestamp - a.timestamp);
-    console.log(`Retrieved ${contacts.length} contacts`);
+    const { data, error } = await supabase()
+      .from("contacts")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    // Backfill leadNumber for old contacts that don't have one
-    const byTimestampAsc = [...contacts].sort((a: any, b: any) => (a.timestamp || 0) - (b.timestamp || 0));
-    const needsBackfill = byTimestampAsc.some((c: any) => !c.leadNumber);
-    if (needsBackfill) {
-      let nextNumber = 1;
-      for (const ct of byTimestampAsc) {
-        if (!(ct as any).leadNumber) {
-          (ct as any).leadNumber = nextNumber;
-          await kv.set((ct as any).id, ct);
-          console.log(`Backfilled leadNumber=${nextNumber} for ${(ct as any).id}`);
-        }
-        nextNumber = Math.max(nextNumber, (ct as any).leadNumber) + 1;
-      }
-    }
+    if (error) throw error;
 
-    // Re-sort newest first for response, ensure stage default
-    const withStage = sortedContacts.map((c: any) => ({
-      ...c,
-      pipelineStage: c.pipelineStage || 'novo',
-    }));
-    return c.json({ success: true, contacts: withStage, count: withStage.length });
+    const contacts = (data || []).map((row: any) => {
+      const contact = toCamel(row);
+      // Ensure pipeline stage default
+      if (!contact.pipelineStage) contact.pipelineStage = "novo";
+      // Add timestamp for frontend compat
+      contact.timestamp = new Date(row.created_at).getTime();
+      return contact;
+    });
+
+    return c.json({ success: true, contacts, count: contacts.length });
   } catch (error) {
     console.log(`Error retrieving contacts: ${error}`);
     return c.json({ error: "Erro ao buscar contatos" }, 500);
   }
 });
 
-// Update contact (e.g., pipeline stage, notes, owner)
 app.put("/make-server-4b2936bc/contacts/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    if (!id) {
-      return c.json({ error: "ID do contato é obrigatório" }, 400);
-    }
-    const contactKey = id.startsWith("contact:") ? id : `contact:${id}`;
-    const existing = await kv.get(contactKey);
-    if (!existing) {
-      console.log(`Contact update error: Contact not found - ${id}`);
-      return c.json({ error: "Contato não encontrado" }, 404);
-    }
-
     const body = await c.req.json();
-    // Campos permitidos para atualização
-    const {
-      name,
-      email,
-      phone,
-      interest,
-      pipelineStage,
-      notes,
-      owner,
-      lastActivityAt,
-      followUpAt,
-      desiredLocations,
-      maxBudget,
-      typology,
-      projectId,
-      unitId,
-      proposalValue,
-      classifications,
-      origin,
-    } = body || {};
 
-    const updated = {
-      ...(existing as any),
-      // Dados do contacto
-      name: name !== undefined ? name : (existing as any).name || '',
-      email: email !== undefined ? email : (existing as any).email || '',
-      phone: phone !== undefined ? phone : (existing as any).phone || '',
-      interest: interest !== undefined ? interest : (existing as any).interest || '',
-      pipelineStage: pipelineStage || (existing as any).pipelineStage || 'novo',
-      notes: notes !== undefined ? notes : (existing as any).notes || '',
-      owner: owner !== undefined ? owner : (existing as any).owner || '',
-      lastActivityAt: lastActivityAt || new Date().toISOString(),
-      followUpAt: followUpAt || (existing as any).followUpAt || null,
-      // Preferências do lead
-      desiredLocations: Array.isArray(desiredLocations)
-        ? desiredLocations
-        : (existing as any).desiredLocations || [],
-      maxBudget: maxBudget !== undefined ? maxBudget : (existing as any).maxBudget || '',
-      typology: typology !== undefined ? typology : (existing as any).typology || '',
-      // Projecto de controlo
-      projectId: projectId !== undefined ? projectId : (existing as any).projectId || '',
-      unitId: unitId !== undefined ? unitId : (existing as any).unitId || '',
-      proposalValue: proposalValue !== undefined ? proposalValue : (existing as any).proposalValue || 0,
-      classifications: Array.isArray(classifications)
-        ? classifications
-        : (existing as any).classifications || [],
-      origin: origin !== undefined ? origin : (existing as any).origin || '',
-      updatedAt: new Date().toISOString(),
+    const updateData: Record<string, any> = {};
+
+    // Map camelCase body fields to snake_case DB columns
+    const fieldMap: Record<string, string> = {
+      name: "name",
+      email: "email",
+      phone: "phone",
+      interest: "interest",
+      pipelineStage: "pipeline_stage",
+      notes: "notes",
+      desiredLocations: "desired_locations",
+      maxBudget: "max_budget",
+      typology: "typology",
+      classifications: "classifications",
+      propertyId: "property_id",
+      propertyTitle: "property_title",
+      utmSource: "utm_source",
+      utmMedium: "utm_medium",
+      utmCampaign: "utm_campaign",
+      source: "source",
+      sourceId: "source_id",
+      sourceTitle: "source_title",
+      sourceUrl: "source_url",
+      leadNumber: "lead_number",
     };
 
-    await kv.set(contactKey, updated);
-    console.log(`Contact updated successfully: ${contactKey} -> stage=${updated.pipelineStage}`);
-    return c.json({ success: true, message: "Contato atualizado com sucesso!", contact: updated });
+    for (const [camel, snake] of Object.entries(fieldMap)) {
+      if (body[camel] !== undefined) {
+        updateData[snake] = body[camel];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return c.json({ error: "Nenhum campo para atualizar" }, 400);
+    }
+
+    const { data, error } = await supabase()
+      .from("contacts")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Contato não encontrado" }, 404);
+      throw error;
+    }
+
+    const contact = toCamel(data);
+    contact.timestamp = new Date(data.created_at).getTime();
+    console.log(`Contact updated: ${id} -> stage=${data.pipeline_stage}`);
+    return c.json({ success: true, message: "Contato atualizado com sucesso!", contact });
   } catch (error) {
     console.log(`Contact update error: ${error}`);
     return c.json({ error: "Erro ao atualizar contato" }, 500);
   }
 });
 
-// ── Activities per contact ──
+// ── Activities ──
 
-// GET /contacts/:id/activities
 app.get("/make-server-4b2936bc/contacts/:id/activities", async (c) => {
   try {
     const id = c.req.param("id");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const activities = await kv.getByPrefix(`activity:${normalizedId}:`);
-    const sorted = activities.sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
-    return c.json({ success: true, activities: sorted, count: sorted.length });
+    const { data, error } = await supabase()
+      .from("activities")
+      .select("*")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const activities = (data || []).map((row: any) => {
+      const a = toCamel(row);
+      a.timestamp = new Date(row.created_at).getTime();
+      return a;
+    });
+
+    return c.json({ success: true, activities, count: activities.length });
   } catch (error) {
     console.log(`Error retrieving activities: ${error}`);
     return c.json({ error: "Erro ao buscar atividades" }, 500);
   }
 });
 
-// POST /contacts/:id/activities
 app.post("/make-server-4b2936bc/contacts/:id/activities", async (c) => {
   try {
-    const id = c.req.param("id");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
+    const contactId = c.req.param("id");
     const body = await c.req.json();
     const { date, channel, type, content } = body || {};
+
     if (!channel || !content) {
       return c.json({ error: "Canal e conteúdo são obrigatórios" }, 400);
     }
-    const timestamp = Date.now();
-    const activityId = `${timestamp}`;
-    const key = `activity:${normalizedId}:${activityId}`;
-    const data = {
-      id: activityId,
-      contactId: normalizedId,
-      date: date || new Date().toISOString().slice(0, 10),
-      channel,
-      type: type || '',
-      content,
-      timestamp,
-      createdAt: new Date().toISOString(),
-    };
-    await kv.set(key, data);
-    console.log(`Activity created for contact ${normalizedId}: ${channel} - ${type}`);
-    return c.json({ success: true, activity: data });
+
+    const { data, error } = await supabase()
+      .from("activities")
+      .insert({
+        contact_id: contactId,
+        type: type || channel,
+        channel,
+        description: content,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const activity = toCamel(data);
+    activity.timestamp = new Date(data.created_at).getTime();
+    // Keep compat fields
+    activity.content = data.description;
+    activity.date = data.created_at.slice(0, 10);
+
+    console.log(`Activity created for ${contactId}: ${channel}`);
+    return c.json({ success: true, activity });
   } catch (error) {
     console.log(`Error creating activity: ${error}`);
     return c.json({ error: "Erro ao criar atividade" }, 500);
   }
 });
 
-// DELETE /contacts/:id/activities/:activityId
 app.delete("/make-server-4b2936bc/contacts/:id/activities/:activityId", async (c) => {
   try {
-    const id = c.req.param("id");
     const activityId = c.req.param("activityId");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const key = `activity:${normalizedId}:${activityId}`;
-    await kv.del(key);
+    const { error } = await supabase().from("activities").delete().eq("id", activityId);
+    if (error) throw error;
     return c.json({ success: true, message: "Atividade eliminada" });
   } catch (error) {
     console.log(`Error deleting activity: ${error}`);
@@ -302,140 +343,143 @@ app.delete("/make-server-4b2936bc/contacts/:id/activities/:activityId", async (c
   }
 });
 
-// Get all newsletter subscribers (admin endpoint)
+// ============================================================================
+// NEWSLETTER (PostgreSQL: newsletter_subscribers table)
+// ============================================================================
+
+app.post("/make-server-4b2936bc/newsletter", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email } = body;
+
+    if (!email) return c.json({ error: "Email é obrigatório" }, 400);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return c.json({ error: "Email inválido" }, 400);
+
+    // Upsert (idempotent)
+    const { data, error } = await supabase()
+      .from("newsletter_subscribers")
+      .upsert({ email: email.toLowerCase() }, { onConflict: "email" })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`Newsletter subscription: ${email}`);
+    return c.json({
+      success: true,
+      message: "Subscrição confirmada! Verifique o seu email.",
+      id: data.id,
+    });
+  } catch (error) {
+    console.log(`Newsletter error: ${error}`);
+    return c.json({ error: "Erro ao processar subscrição. Tente novamente." }, 500);
+  }
+});
+
 app.get("/make-server-4b2936bc/subscribers", async (c) => {
   try {
-    const subscribers = await kv.getByPrefix("newsletter:");
-    const sortedSubscribers = subscribers.sort((a: any, b: any) => b.timestamp - a.timestamp);
-    console.log(`Retrieved ${subscribers.length} newsletter subscribers`);
-    return c.json({ success: true, subscribers: sortedSubscribers, count: subscribers.length });
+    const { data, error } = await supabase()
+      .from("newsletter_subscribers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const subscribers = (data || []).map((row: any) => ({
+      id: row.id,
+      email: row.email,
+      subscribedAt: row.subscribed_at || row.created_at,
+      timestamp: new Date(row.created_at).getTime(),
+    }));
+
+    return c.json({ success: true, subscribers, count: subscribers.length });
   } catch (error) {
     console.log(`Error retrieving subscribers: ${error}`);
     return c.json({ error: "Erro ao buscar subscritos" }, 500);
   }
 });
 
-// Delete newsletter subscriber (admin endpoint)
 app.delete("/make-server-4b2936bc/subscribers/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    
-    console.log(`[DELETE Subscriber] 🗑️ Recebida requisição para excluir subscriber com ID: "${id}"`);
-    
-    if (!id) {
-      console.log("[DELETE Subscriber] ❌ Erro: ID não fornecido");
-      return c.json({ error: "ID do assinante é obrigatório" }, 400);
-    }
-
-    const key = `newsletter:${id}`;
-    console.log(`[DELETE Subscriber] 🔑 Tentando deletar chave KV: "${key}"`);
-    
-    // Verificar se existe antes de deletar
-    const existingValue = await kv.get(key);
-    console.log(`[DELETE Subscriber] 🔍 Subscriber existe?`, existingValue ? 'SIM' : 'NÃO', existingValue);
-    
-    // Delete from KV store
-    await kv.del(key);
-    
-    console.log(`[DELETE Subscriber] ✅ Chave "${key}" deletada com sucesso`);
+    const { error } = await supabase().from("newsletter_subscribers").delete().eq("id", id);
+    if (error) throw error;
+    console.log(`Subscriber deleted: ${id}`);
     return c.json({ success: true, message: "Assinante excluído com sucesso" });
   } catch (error) {
-    console.log(`[DELETE Subscriber] ❌ Erro ao excluir: ${error}`);
+    console.log(`Error deleting subscriber: ${error}`);
     return c.json({ error: "Erro ao excluir assinante" }, 500);
   }
 });
 
-// ============================================
-// PROJECTS CRUD ENDPOINTS
-// ============================================
+// ============================================================================
+// PROJECTS (PostgreSQL: projects table)
+// ============================================================================
 
-// Get all projects (with automatic migration of old status values)
 app.get("/make-server-4b2936bc/projects", async (c) => {
   try {
-    const projects = await kv.getByPrefix("project:");
-    
-    // Auto-migrate old status values on-the-fly
-    const statusMapping: Record<string, { newStatus: string; newLabel: string }> = {
-      'analysis': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-      'renovation': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-      'completed': { newStatus: 'sold', newLabel: 'Vendido' },
-    };
-    
-    let migratedCount = 0;
-    const migratedProjects = await Promise.all(projects.map(async (project: any) => {
-      const oldStatus = project.status;
-      
-      // Check if status needs migration
-      if (oldStatus === 'analysis' || oldStatus === 'renovation' || oldStatus === 'completed') {
-        const migration = statusMapping[oldStatus];
-        
-        const updatedProject = {
-          ...project,
-          status: migration.newStatus,
-          statusLabel: migration.newLabel,
-          updatedAt: new Date().toISOString(),
-        };
-        
-        // Save migrated project back to database
-        const projectKey = `project:${project.id}`;
-        await kv.set(projectKey, updatedProject);
-        
-        console.log(`[Auto-Migration] ✅ ${project.id}: ${oldStatus} → ${migration.newStatus}`);
-        migratedCount++;
-        
-        return updatedProject;
-      }
-      
-      return project;
-    }));
-    
-    if (migratedCount > 0) {
-      console.log(`[Auto-Migration] Migrated ${migratedCount} projects automatically`);
-    }
-    
-    const sortedProjects = migratedProjects.sort((a: any, b: any) => b.timestamp - a.timestamp);
-    console.log(`Retrieved ${projects.length} projects (${migratedCount} auto-migrated)`);
-    return c.json({ success: true, projects: sortedProjects, count: projects.length });
+    const { data, error } = await supabase()
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const projects = (data || []).map((row: any) => {
+      const p = projectFromDb(row);
+      p.timestamp = new Date(row.created_at).getTime();
+      return p;
+    });
+
+    return c.json({ success: true, projects, count: projects.length });
   } catch (error) {
     console.log(`Error retrieving projects: ${error}`);
     return c.json({ error: "Erro ao buscar projetos" }, 500);
   }
 });
 
-// Get single project by ID (with automatic migration)
+app.get("/make-server-4b2936bc/projects/by-slug/:slug", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    const { data, error } = await supabase()
+      .from("projects")
+      .select("*")
+      .eq("slug", slug)
+      .eq("published", true)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Imóvel não encontrado" }, 404);
+      throw error;
+    }
+
+    const project = projectFromDb(data);
+    project.timestamp = new Date(data.created_at).getTime();
+    return c.json({ success: true, project });
+  } catch (error) {
+    console.log(`Error retrieving project by slug: ${error}`);
+    return c.json({ error: "Erro ao buscar imóvel" }, 500);
+  }
+});
+
 app.get("/make-server-4b2936bc/projects/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const projectKey = `project:${id}`;
-    let project = await kv.get(projectKey);
-    
-    if (!project) {
-      console.log(`Project not found: ${id}`);
-      return c.json({ error: "Projeto não encontrado" }, 404);
+    const { data, error } = await supabase()
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Projeto não encontrado" }, 404);
+      throw error;
     }
-    
-    // Auto-migrate old status if needed
-    const projectData = project as any;
-    if (projectData.status === 'analysis' || projectData.status === 'renovation' || projectData.status === 'completed') {
-      const statusMapping: Record<string, { newStatus: string; newLabel: string }> = {
-        'analysis': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-        'renovation': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-        'completed': { newStatus: 'sold', newLabel: 'Vendido' },
-      };
-      
-      const migration = statusMapping[projectData.status];
-      project = {
-        ...projectData,
-        status: migration.newStatus,
-        statusLabel: migration.newLabel,
-        updatedAt: new Date().toISOString(),
-      };
-      
-      await kv.set(projectKey, project);
-      console.log(`[Auto-Migration] ✅ ${id}: ${projectData.status} → ${migration.newStatus}`);
-    }
-    
-    console.log(`Retrieved project: ${id}`);
+
+    const project = projectFromDb(data);
+    project.timestamp = new Date(data.created_at).getTime();
     return c.json({ success: true, project });
   } catch (error) {
     console.log(`Error retrieving project: ${error}`);
@@ -443,545 +487,334 @@ app.get("/make-server-4b2936bc/projects/:id", async (c) => {
   }
 });
 
-// Create new project
 app.post("/make-server-4b2936bc/projects", async (c) => {
   try {
     const body = await c.req.json();
-    const {
-      title,
-      location,
-      status,
-      statusLabel,
-      strategy,
-      image,
-      roi,
-      area,
-      bedrooms,
-      bathrooms,
-      price,
-      investment,
-      timeline,
-      timelinePhases,
-      description,
-      highlights,
-      portalLink,
-      brochureLink,
-      landingPage,
-    } = body;
 
-    // Validation
-    if (!title || !location || !status || !statusLabel || !strategy || !image) {
-      console.log(`Project creation error: Missing required fields`);
+    if (!body.title || !body.location) {
       return c.json({ error: "Campos obrigatórios ausentes" }, 400);
     }
 
-    const timestamp = Date.now();
-    const projectId = `${timestamp}`;
-    const projectKey = `project:${projectId}`;
+    const dbData = projectToDb(body);
+    // Ensure defaults
+    if (!dbData.status) dbData.status = "draft";
+    if (!dbData.published) dbData.published = false;
 
-    const projectData = {
-      id: projectId,
-      title,
-      location,
-      status,
-      statusLabel,
-      strategy,
-      image,
-      roi: roi || "+0%",
-      area: area || "0 m²",
-      bedrooms: bedrooms || 0,
-      bathrooms: bathrooms || 0,
-      price: price || "€0",
-      investment: investment || "€0",
-      timeline: timeline || "0 meses",
-      timelinePhases: timelinePhases || "",
-      description: description || "",
-      highlights: highlights || "",
-      portalLink: portalLink || null,
-      brochureLink: brochureLink || null,
-      landingPage: landingPage || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      timestamp,
-    };
+    // Auto-generate slug from title if not provided
+    if (!dbData.slug && dbData.title) {
+      dbData.slug = dbData.title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
 
-    await kv.set(projectKey, projectData);
-    console.log(`Project created successfully: ${projectId} - ${title}`);
+    const { data, error } = await supabase()
+      .from("projects")
+      .insert(dbData)
+      .select()
+      .single();
 
-    return c.json({
-      success: true,
-      message: "Projeto criado com sucesso!",
-      project: projectData,
-    });
+    if (error) {
+      console.log(`Project insert error: ${error.message}`);
+      return c.json({ error: "Erro ao criar projeto. Tente novamente." }, 500);
+    }
+
+    const project = projectFromDb(data);
+    project.timestamp = new Date(data.created_at).getTime();
+    console.log(`Project created: ${data.id} - ${data.title}`);
+    return c.json({ success: true, message: "Projeto criado com sucesso!", project });
   } catch (error) {
     console.log(`Project creation error: ${error}`);
     return c.json({ error: "Erro ao criar projeto. Tente novamente." }, 500);
   }
 });
 
-// Update existing project
 app.put("/make-server-4b2936bc/projects/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const projectKey = `project:${id}`;
-    
-    // Check if project exists
-    const existing = await kv.get(projectKey);
-    if (!existing) {
-      console.log(`Project update error: Project not found - ${id}`);
-      return c.json({ error: "Projeto não encontrado" }, 404);
-    }
-
     const body = await c.req.json();
-    const {
-      title,
-      location,
-      status,
-      statusLabel,
-      strategy,
-      image,
-      roi,
-      area,
-      bedrooms,
-      bathrooms,
-      price,
-      investment,
-      timeline,
-      timelinePhases,
-      description,
-      highlights,
-      portalLink,
-      brochureLink,
-      landingPage,
-    } = body;
+    const dbData = projectToDb(body);
 
-    // Validation
-    if (!title || !location || !status || !statusLabel || !strategy || !image) {
-      console.log(`Project update error: Missing required fields`);
-      return c.json({ error: "Campos obrigatórios ausentes" }, 400);
+    // Remove id from update data
+    delete dbData.id;
+    delete dbData.created_at;
+
+    const { data, error } = await supabase()
+      .from("projects")
+      .update(dbData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Projeto não encontrado" }, 404);
+      console.log(`Project update error: ${error.message}`);
+      return c.json({ error: "Erro ao atualizar projeto. Tente novamente." }, 500);
     }
 
-    const projectData = {
-      ...(existing as any),
-      title,
-      location,
-      status,
-      statusLabel,
-      strategy,
-      image,
-      roi: roi || "+0%",
-      area: area || "0 m²",
-      bedrooms: bedrooms || 0,
-      bathrooms: bathrooms || 0,
-      price: price || "€0",
-      investment: investment || "€0",
-      timeline: timeline || "0 meses",
-      timelinePhases: timelinePhases || "",
-      description: description || "",
-      highlights: highlights || "",
-      portalLink: portalLink || null,
-      brochureLink: brochureLink || null,
-      landingPage: landingPage || null,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await kv.set(projectKey, projectData);
-    console.log(`Project updated successfully: ${id} - ${title}`);
-
-    return c.json({
-      success: true,
-      message: "Projeto atualizado com sucesso!",
-      project: projectData,
-    });
+    const project = projectFromDb(data);
+    project.timestamp = new Date(data.created_at).getTime();
+    console.log(`Project updated: ${id} - ${data.title}`);
+    return c.json({ success: true, message: "Projeto atualizado com sucesso!", project });
   } catch (error) {
     console.log(`Project update error: ${error}`);
     return c.json({ error: "Erro ao atualizar projeto. Tente novamente." }, 500);
   }
 });
 
-// Delete project
 app.delete("/make-server-4b2936bc/projects/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const projectKey = `project:${id}`;
-    
-    // Check if project exists
-    const existing = await kv.get(projectKey);
-    if (!existing) {
-      console.log(`Project deletion error: Project not found - ${id}`);
-      return c.json({ error: "Projeto não encontrado" }, 404);
-    }
-
-    await kv.del(projectKey);
-    console.log(`Project deleted successfully: ${id}`);
-
-    return c.json({
-      success: true,
-      message: "Projeto excluído com sucesso!",
-    });
+    const { error } = await supabase().from("projects").delete().eq("id", id);
+    if (error) throw error;
+    console.log(`Project deleted: ${id}`);
+    return c.json({ success: true, message: "Projeto excluído com sucesso!" });
   } catch (error) {
     console.log(`Project deletion error: ${error}`);
     return c.json({ error: "Erro ao excluir projeto. Tente novamente." }, 500);
   }
 });
 
-// Seed/Populate projects with initial data
-app.post("/make-server-4b2936bc/projects/seed", async (c) => {
+// ── Units (PostgreSQL: units table) ──
+
+app.get("/make-server-4b2936bc/units", async (c) => {
   try {
-    const initialProjects = [
-      {
-        id: '1',
-        title: 'Apartamento Premium Centro Lisboa',
-        location: 'Chiado, Lisboa',
-        status: 'completed',
-        statusLabel: 'Vendido',
-        strategy: 'fix-flip',
-        image: 'https://images.unsplash.com/photo-1695395894170-ff75a98f176c?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBhcGFydG1lbnQlMjBpbnRlcmlvciUyMHBvcnR1Z2FsfGVufDF8fHx8MTc2MTg1MzQxMnww&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+32%',
-        area: '95 m²',
-        bedrooms: 2,
-        bathrooms: 2,
-        price: '€420.000',
-        investment: '€318.000',
-        timeline: '9 meses',
-        timelinePhases: 'Aquisição|1 mês|completed\nLicenciamento|2 meses|completed\nObra Estrutural|3 meses|completed\nAcabamentos|2 meses|completed\nComercialização|1 mês|completed',
-        description: 'Apartamento premium reabilitado em Lisboa, concluído em 9 meses.',
-        highlights: 'Restauro de fachada histórica em azulejos\nPreservação de elementos arquitetónicos originais\nSistema de climatização eficiente\nCozinha e casas de banho de design premium\nCertificação energética A\nLocalização prime no Chiado',
-      },
-      {
-        id: '2',
-        title: 'Moradia Contemporânea Cascais',
-        location: 'Estoril, Cascais',
-        status: 'completed',
-        statusLabel: 'Vendido',
-        strategy: 'fix-flip',
-        image: 'https://images.unsplash.com/photo-1561753757-d8880c5a3551?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjByZW5vdmF0ZWQlMjBob21lJTIwZXVyb3BlfGVufDF8fHx8MTc2MTg1MzQxMnww&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+28%',
-        area: '180 m²',
-        bedrooms: 4,
-        bathrooms: 3,
-        price: '€750.000',
-        investment: '€585.000',
-        timeline: '11 meses',
-        timelinePhases: 'Aquisição|1.5 meses|completed\nLicenciamento|2.5 meses|completed\nObra Estrutural|4 meses|completed\nAcabamentos|2.5 meses|completed\nComercialização|0.5 meses|completed',
-        description: 'Moradia de luxo com design contemporâneo e acabamentos premium.',
-        highlights: 'Arquitetura contemporânea de alto padrão\nJardim paisagístico com piscina\nSistema domótico integrado\nCozinha gourmet totalmente equipada\nGaragem para 3 veículos\nVista mar panorâmica',
-      },
-      {
-        id: '3',
-        title: 'Loft Moderno Zona Histórica',
-        location: 'Alfama, Lisboa',
-        status: 'in-progress',
-        statusLabel: 'Em Andamento',
-        strategy: 'buy-hold',
-        image: 'https://images.unsplash.com/photo-1600876188212-40de3a9218ba?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb250ZW1wb3JhcnklMjBob3VzZSUyMHBvcnR1Z2FsJTIwYXJjaGl0ZWN0dXJlfGVufDF8fHx8MTc2MTg1MzQxM3ww&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+35%',
-        area: '120 m²',
-        bedrooms: 2,
-        bathrooms: 2,
-        price: '€485.000',
-        investment: '€359.000',
-        timeline: '7 meses',
-        timelinePhases: 'Aquisição|0.5 meses|completed\nLicenciamento|1.5 meses|completed\nObra Estrutural|3 meses|in-progress\nAcabamentos|1.5 meses|pending\nComercialização|0.5 meses|pending',
-        description: 'Transformação de edifício histórico em loft moderno de alto padrão.',
-        highlights: 'Conceito open-space moderno\nPé-direito duplo com mezanino\nPreservação de paredes em pedra original\nIluminação natural abundante\nAcabamentos de luxo\nLocalização histórica premium',
-      },
-      {
-        id: '4',
-        title: 'Edifício Reabilitação Integral',
-        location: 'Baixa, Porto',
-        status: 'in-progress',
-        statusLabel: 'Em Andamento',
-        strategy: 'fix-flip',
-        image: 'https://images.unsplash.com/photo-1683880356566-3245383f3a18?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1cmJhbiUyMHJlbm92YXRpb24lMjBidWlsZGluZyUyMGxpc2JvbnxlbnwxfHx8fDE3NjE4NTM0MTN8MA&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+40%',
-        area: '450 m²',
-        bedrooms: 6,
-        bathrooms: 5,
-        price: '€1.250.000',
-        investment: '€893.000',
-        timeline: '14 meses',
-        timelinePhases: 'Aquisição|2 meses|completed\nLicenciamento|3 meses|completed\nObra Estrutural|5 meses|in-progress\nAcabamentos|3 meses|pending\nComercialização|1 mês|pending',
-        description: 'Projeto completo de reabilitação urbana em zona premium do Porto.',
-        highlights: 'Reabilitação de fachada histórica\n6 apartamentos de luxo\nElevador moderno instalado\nSistema centralizado de climatização\nCertificação energética A+\nLocalização premium na Baixa do Porto',
-      },
-      {
-        id: '5',
-        title: 'Apartamento Vista Mar',
-        location: 'Cascais',
-        status: 'available',
-        statusLabel: 'Disponível',
-        strategy: 'buy-hold',
-        image: 'https://images.unsplash.com/photo-1759150712360-6d48015e4f86?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBhcGFydG1lbnQlMjByZW5vdmF0aW9ufGVufDF8fHx8MTc2MTc3NTk3Nnww&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+30%',
-        area: '135 m²',
-        bedrooms: 3,
-        bathrooms: 2,
-        price: '€595.000',
-        investment: '€458.000',
-        timeline: '8 meses',
-        timelinePhases: 'Aquisição|1 mês|completed\nLicenciamento|2 meses|completed\nObra Estrutural|3 meses|completed\nAcabamentos|1.5 meses|completed\nComercialização|0.5 meses|completed',
-        description: 'Oportunidade com vista mar e alto potencial de valorização.',
-        highlights: 'Vista mar deslumbrante\nCondomínio fechado com segurança 24h\nPiscina comum e ginásio\n2 lugares de garagem\nPróximo à praia (5 min a pé)\nAlto potencial de valorização',
-      },
-      {
-        id: '6',
-        title: 'Penthouse Centro Histórico',
-        location: 'Bairro Alto, Lisboa',
-        status: 'in-progress',
-        statusLabel: 'Em Andamento',
-        strategy: 'fix-flip',
-        image: 'https://images.unsplash.com/photo-1716807335144-33e138f1858a?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBob21lJTIwaW50ZXJpb3IlMjBkZXNpZ258ZW58MXx8fHwxNzYxODIwNjQxfDA&ixlib=rb-4.1.0&q=55&w=480',
-        roi: '+38%',
-        area: '160 m²',
-        bedrooms: 3,
-        bathrooms: 3,
-        price: '€720.000',
-        investment: '€522.000',
-        timeline: '10 meses',
-        timelinePhases: 'Aquisição|1.5 meses|completed\nLicenciamento|2.5 meses|in-progress\nObra Estrutural|3.5 meses|pending\nAcabamentos|2 meses|pending\nComercialização|0.5 meses|pending',
-        description: 'Penthouse de luxo em localização premium com terraço privativo.',
-        highlights: 'Terraço privativo de 80m²\nVistas panorâmicas de Lisboa\nLocalização premium no Bairro Alto\nTetos altos (3.5m)\nLuz natural abundante\nPotencial para piscina no terraço',
-      },
-    ];
+    const projectId = c.req.query("projectId");
+    let query = supabase().from("units").select("*").order("display_order", { ascending: true });
+    if (projectId) query = query.eq("project_id", projectId);
 
-    const createdProjects = [];
-    const timestamp = Date.now();
+    const { data, error } = await query;
+    if (error) throw error;
 
-    for (let i = 0; i < initialProjects.length; i++) {
-      const project = initialProjects[i];
-      const projectKey = `project:${project.id}`;
-      
-      // Check if already exists
-      const existing = await kv.get(projectKey);
-      if (existing) {
-        console.log(`Project already exists, skipping: ${project.id} - ${project.title}`);
-        continue;
-      }
+    const units = rowsToCamel(data || []);
+    return c.json({ success: true, units, count: units.length });
+  } catch (error) {
+    console.log(`Error retrieving units: ${error}`);
+    return c.json({ error: "Erro ao buscar unidades" }, 500);
+  }
+});
 
-      const projectData = {
-        ...project,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        timestamp: timestamp + i,
-      };
+app.get("/make-server-4b2936bc/units/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { data, error } = await supabase().from("units").select("*").eq("id", id).single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Unidade não encontrada" }, 404);
+      throw error;
+    }
+    return c.json({ success: true, unit: toCamel(data) });
+  } catch (error) {
+    console.log(`Error retrieving unit: ${error}`);
+    return c.json({ error: "Erro ao buscar unidade" }, 500);
+  }
+});
 
-      await kv.set(projectKey, projectData);
-      createdProjects.push(projectData);
-      console.log(`Project seeded: ${project.id} - ${project.title}`);
+app.post("/make-server-4b2936bc/units", async (c) => {
+  try {
+    const body = await c.req.json();
+    const dbData = toSnake(body);
+    // Remove non-DB fields
+    delete dbData.timestamp;
+
+    const { data, error } = await supabase().from("units").insert(dbData).select().single();
+    if (error) {
+      console.log(`Unit insert error: ${error.message}`);
+      return c.json({ error: "Erro ao criar unidade." }, 500);
     }
 
-    console.log(`Seed complete: ${createdProjects.length} projects created`);
-
-    return c.json({
-      success: true,
-      message: `${createdProjects.length} projetos criados com sucesso!`,
-      created: createdProjects.length,
-      skipped: initialProjects.length - createdProjects.length,
-      projects: createdProjects,
-    });
+    console.log(`Unit created: ${data.id} - ${data.title}`);
+    return c.json({ success: true, message: "Unidade criada com sucesso!", unit: toCamel(data) });
   } catch (error) {
-    console.log(`Project seed error: ${error}`);
-    return c.json({ error: "Erro ao popular projetos. Tente novamente." }, 500);
+    console.log(`Unit creation error: ${error}`);
+    return c.json({ error: "Erro ao criar unidade." }, 500);
   }
 });
 
-// Delete all projects and reseed with clean data
-app.post("/make-server-4b2936bc/projects/reset", async (c) => {
+app.put("/make-server-4b2936bc/units/:id", async (c) => {
   try {
-    console.log('[Reset] Starting database reset...');
-    
-    // Get all projects
-    const projects = await kv.getByPrefix("project:");
-    console.log(`[Reset] Found ${projects.length} projects to delete`);
-    
-    // Delete all projects
-    const deletePromises = projects.map((project: any) => {
-      const projectKey = `project:${project.id}`;
-      return kv.del(projectKey);
-    });
-    
-    await Promise.all(deletePromises);
-    console.log(`[Reset] ✅ Deleted ${projects.length} projects`);
-    
-    return c.json({
-      success: true,
-      message: `${projects.length} projetos deletados. Use "Sincronizar Site" para recriar com dados corretos.`,
-      deleted: projects.length,
-    });
-  } catch (error) {
-    console.log(`[Reset] ❌ Error: ${error}`);
-    return c.json({ error: "Erro ao resetar banco de dados." }, 500);
-  }
-});
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const dbData = toSnake(body);
+    delete dbData.id;
+    delete dbData.timestamp;
+    delete dbData.created_at;
 
-// Migrate old status values to new ones
-app.post("/make-server-4b2936bc/projects/migrate-status", async (c) => {
-  try {
-    console.log('[Migration] Starting status migration...');
-    
-    const projects = await kv.getByPrefix("project:");
-    console.log(`[Migration] Found ${projects.length} projects to check`);
-    
-    const statusMapping: Record<string, { newStatus: string; newLabel: string }> = {
-      'analysis': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-      'renovation': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-      'completed': { newStatus: 'sold', newLabel: 'Vendido' },
-      'available': { newStatus: 'available', newLabel: 'Disponível' },
-      'sold': { newStatus: 'sold', newLabel: 'Vendido' },
-      'in-progress': { newStatus: 'in-progress', newLabel: 'Em Andamento' },
-    };
-    
-    let migratedCount = 0;
-    let skippedCount = 0;
-    
-    for (const project of projects) {
-      const oldStatus = (project as any).status;
-      
-      // Check if status needs migration
-      if (oldStatus === 'analysis' || oldStatus === 'renovation' || oldStatus === 'completed') {
-        const migration = statusMapping[oldStatus];
-        
-        const updatedProject = {
-          ...(project as any),
-          status: migration.newStatus,
-          statusLabel: migration.newLabel,
-          updatedAt: new Date().toISOString(),
-        };
-        
-        const projectKey = `project:${(project as any).id}`;
-        await kv.set(projectKey, updatedProject);
-        
-        console.log(`[Migration] ✅ Migrated project ${(project as any).id}: ${oldStatus} -> ${migration.newStatus}`);
-        migratedCount++;
-      } else {
-        console.log(`[Migration] ⏭️  Skipped project ${(project as any).id}: already using valid status "${oldStatus}"`);
-        skippedCount++;
-      }
+    const { data, error } = await supabase().from("units").update(dbData).eq("id", id).select().single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Unidade não encontrada" }, 404);
+      throw error;
     }
-    
-    console.log(`[Migration] Complete: ${migratedCount} migrated, ${skippedCount} skipped`);
-    
-    return c.json({
-      success: true,
-      message: `Migração concluída! ${migratedCount} projetos atualizados, ${skippedCount} já estavam corretos.`,
-      migrated: migratedCount,
-      skipped: skippedCount,
-      total: projects.length,
-    });
+
+    console.log(`Unit updated: ${id} - ${data.title}`);
+    return c.json({ success: true, message: "Unidade atualizada com sucesso!", unit: toCamel(data) });
   } catch (error) {
-    console.log(`[Migration] ❌ Error: ${error}`);
-    return c.json({ error: "Erro na migração. Tente novamente." }, 500);
+    console.log(`Unit update error: ${error}`);
+    return c.json({ error: "Erro ao atualizar unidade." }, 500);
   }
 });
 
-// ============================================
-// INSIGHTS CRUD ENDPOINTS
-// ============================================
+app.delete("/make-server-4b2936bc/units/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { error } = await supabase().from("units").delete().eq("id", id);
+    if (error) throw error;
+    console.log(`Unit deleted: ${id}`);
+    return c.json({ success: true, message: "Unidade eliminada com sucesso!" });
+  } catch (error) {
+    console.log(`Unit deletion error: ${error}`);
+    return c.json({ error: "Erro ao eliminar unidade." }, 500);
+  }
+});
 
-// Get all insights (with auto-seed if empty)
+// ============================================================================
+// INSIGHTS (PostgreSQL: insights table)
+// ============================================================================
+
+// Field map for insights (KV uses different field names)
+function insightToDb(data: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  // Direct mappings
+  if (data.title !== undefined) out.title = data.title;
+  if (data.description !== undefined) out.summary = data.description;  // KV 'description' → DB 'summary'
+  if (data.category !== undefined) out.category = data.category;
+  if (data.content !== undefined) out.content = data.content;
+  if (data.image !== undefined) out.image_url = data.image;
+  if (data.author !== undefined) out.author = data.author;
+  if (data.published !== undefined) out.published = data.published;
+
+  // Store extended fields as content (JSON in content field for rich content)
+  // The insights table has: title, summary, content, category, image_url, author, published, views
+  // Extra KV fields (readTime, icon, iconColor, gradient, excerpt, tags, contentBlocks, etc.)
+  // need to go somewhere. We'll use a JSONB extras approach by storing them in content as JSON
+  // when contentBlocks exist, otherwise content stays as text.
+
+  // For now, if contentBlocks exist, serialize the full rich content into the content field
+  if (data.contentBlocks && Array.isArray(data.contentBlocks) && data.contentBlocks.length > 0) {
+    out.content = JSON.stringify({
+      blocks: data.contentBlocks,
+      readTime: data.readTime,
+      icon: data.icon,
+      iconColor: data.iconColor,
+      gradient: data.gradient,
+      excerpt: data.excerpt,
+      tags: data.tags,
+      authorRole: data.authorRole,
+      date: data.date,
+      relatedInsights: data.relatedInsights,
+    });
+  } else if (data.content !== undefined) {
+    // Check if content is already a rich JSON string
+    try {
+      const parsed = JSON.parse(data.content);
+      if (parsed.blocks) {
+        // Already structured, keep as is
+        out.content = data.content;
+      }
+    } catch {
+      // Plain text content — wrap with metadata
+      out.content = JSON.stringify({
+        text: data.content,
+        readTime: data.readTime,
+        icon: data.icon,
+        iconColor: data.iconColor,
+        gradient: data.gradient,
+        excerpt: data.excerpt,
+        tags: data.tags,
+        authorRole: data.authorRole,
+        date: data.date,
+        relatedInsights: data.relatedInsights,
+      });
+    }
+  }
+
+  return out;
+}
+
+function insightFromDb(row: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {
+    id: row.id,
+    title: row.title,
+    description: row.summary,  // DB 'summary' → response 'description'
+    category: row.category,
+    image: row.image_url,
+    author: row.author,
+    published: row.published,
+    views: row.views,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  // Parse rich content from content field
+  if (row.content) {
+    try {
+      const parsed = JSON.parse(row.content);
+      if (parsed.blocks) {
+        out.contentBlocks = parsed.blocks;
+        out.content = "";  // Legacy field
+      } else if (parsed.text) {
+        out.content = parsed.text;
+      }
+      // Restore metadata
+      out.readTime = parsed.readTime || "5 min";
+      out.icon = parsed.icon || "TrendingUp";
+      out.iconColor = parsed.iconColor || "#1A3E5C";
+      out.gradient = parsed.gradient || "linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)";
+      out.excerpt = parsed.excerpt || row.summary;
+      out.tags = parsed.tags || [];
+      out.authorRole = parsed.authorRole || "";
+      out.date = parsed.date || "";
+      out.relatedInsights = parsed.relatedInsights || [];
+    } catch {
+      // Plain text content
+      out.content = row.content;
+      out.readTime = "5 min";
+      out.icon = "TrendingUp";
+      out.iconColor = "#1A3E5C";
+      out.gradient = "linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)";
+      out.excerpt = row.summary;
+      out.tags = [];
+      out.contentBlocks = [];
+    }
+  }
+
+  return out;
+}
+
 app.get("/make-server-4b2936bc/insights", async (c) => {
   try {
-    let insights = await kv.getByPrefix("insight:");
-    
-    // Auto-seed if no insights exist
-    if (!insights || insights.length === 0) {
-      console.log('No insights found, auto-seeding...');
-      
-      const initialInsights = [
-        {
-          id: '1',
-          title: 'Como avaliar o potencial de valorização de um imóvel urbano',
-          description: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-          category: 'Investimento',
-          readTime: '8 min',
-          icon: 'TrendingUp',
-          iconColor: '#1A3E5C',
-          gradient: 'linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)',
-          author: 'João Silva',
-          authorRole: 'Especialista em Investimento Imobiliário',
-          date: '15 Jan 2024',
-          excerpt: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-          image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200',
-          tags: ['Investimento', 'Reabilitação', 'ARU', 'ROI', 'Valorização'],
-          content: 'A reabilitação urbana tornou-se uma das formas mais rentáveis de investimento imobiliário em Portugal...',
-        },
-        {
-          id: '2',
-          title: 'O impacto das zonas ARU na rentabilidade',
-          description: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-          category: 'Regulamentação',
-          readTime: '6 min',
-          icon: 'Building2',
-          iconColor: '#B8956A',
-          gradient: 'linear-gradient(135deg, #B8956A 0%, #D4B896 100%)',
-          author: 'Maria Costa',
-          authorRole: 'Consultora em Reabilitação Urbana',
-          date: '22 Jan 2024',
-          excerpt: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-          image: 'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200',
-          tags: ['ARU', 'Benefícios Fiscais', 'Rentabilidade', 'Regulamentação'],
-          content: 'As Áreas de Reabilitação Urbana (ARU) são zonas territorialmente delimitadas...',
-        },
-        {
-          id: '3',
-          title: 'Reabilitação sustentável: o futuro do mercado imobiliário',
-          description: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-          category: 'Sustentabilidade',
-          readTime: '7 min',
-          icon: 'Leaf',
-          iconColor: '#6B7C93',
-          gradient: 'linear-gradient(135deg, #6B7C93 0%, #8A9BB0 100%)',
-          author: 'Pedro Santos',
-          authorRole: 'Arquiteto Especialista em Sustentabilidade',
-          date: '5 Fev 2024',
-          excerpt: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-          image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200',
-          tags: ['Sustentabilidade', 'Eficiência Energética', 'Certificação', 'Valorização'],
-          content: 'A sustentabilidade deixou de ser uma tendência para se tornar um requisito fundamental...',
-        },
-      ];
-      
-      const timestamp = Date.now();
-      for (let i = 0; i < initialInsights.length; i++) {
-        const insight = initialInsights[i];
-        const insightData = {
-          ...insight,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          timestamp: timestamp + i,
-        };
-        await kv.set(`insight:${insight.id}`, insightData);
-        console.log(`Auto-seeded insight: ${insight.id} - ${insight.title}`);
-      }
-      
-      // Fetch again after seeding
-      insights = await kv.getByPrefix("insight:");
-      console.log(`Auto-seed complete: ${insights.length} insights created`);
-    }
-    
-    const sortedInsights = insights.sort((a: any, b: any) => b.timestamp - a.timestamp);
-    console.log(`Retrieved ${insights.length} insights`);
-    return c.json({ success: true, insights: sortedInsights, count: insights.length });
+    const { data, error } = await supabase()
+      .from("insights")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const insights = (data || []).map((row: any) => {
+      const insight = insightFromDb(row);
+      insight.timestamp = new Date(row.created_at).getTime();
+      return insight;
+    });
+
+    return c.json({ success: true, insights, count: insights.length });
   } catch (error) {
     console.log(`Error retrieving insights: ${error}`);
     return c.json({ error: "Erro ao buscar insights" }, 500);
   }
 });
 
-// Get single insight by ID
 app.get("/make-server-4b2936bc/insights/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const insightKey = `insight:${id}`;
-    const insight = await kv.get(insightKey);
-    
-    if (!insight) {
-      console.log(`Insight not found: ${id}`);
-      return c.json({ error: "Insight não encontrado" }, 404);
+    const { data, error } = await supabase().from("insights").select("*").eq("id", id).single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Insight não encontrado" }, 404);
+      throw error;
     }
-    
-    console.log(`Retrieved insight: ${id}`);
+
+    const insight = insightFromDb(data);
+    insight.timestamp = new Date(data.created_at).getTime();
     return c.json({ success: true, insight });
   } catch (error) {
     console.log(`Error retrieving insight: ${error}`);
@@ -989,964 +822,394 @@ app.get("/make-server-4b2936bc/insights/:id", async (c) => {
   }
 });
 
-// Create new insight
 app.post("/make-server-4b2936bc/insights", async (c) => {
   try {
     const body = await c.req.json();
-    const {
-      title,
-      description,
-      category,
-      readTime,
-      icon,
-      iconColor,
-      gradient,
-      content,
-      author,
-      authorRole,
-      date,
-      excerpt,
-      image,
-      tags,
-      contentBlocks,
-      relatedInsights,
-    } = body;
-
-    // Validation
-    if (!title || !description || !category) {
-      console.log(`Insight creation error: Missing required fields`);
+    if (!body.title || !body.description || !body.category) {
       return c.json({ error: "Campos obrigatórios ausentes" }, 400);
     }
 
-    const timestamp = Date.now();
-    const insightId = `${timestamp}`;
-    const insightKey = `insight:${insightId}`;
+    const dbData = insightToDb(body);
 
-    const insightData = {
-      id: insightId,
-      title,
-      description,
-      category,
-      readTime: readTime || "5 min",
-      icon: icon || "TrendingUp",
-      iconColor: iconColor || "#1A3E5C",
-      gradient: gradient || "linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)",
-      content: content || "",
-      author: author || "",
-      authorRole: authorRole || "",
-      date: date || new Date().toLocaleDateString('pt-PT'),
-      excerpt: excerpt || description,
-      image: image || "",
-      tags: tags || [],
-      contentBlocks: contentBlocks || [],
-      relatedInsights: relatedInsights || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      timestamp,
-    };
+    const { data, error } = await supabase().from("insights").insert(dbData).select().single();
+    if (error) throw error;
 
-    await kv.set(insightKey, insightData);
-    console.log(`Insight created successfully: ${insightId} - ${title}`);
-
-    return c.json({
-      success: true,
-      message: "Insight criado com sucesso!",
-      insight: insightData,
-    });
+    const insight = insightFromDb(data);
+    insight.timestamp = new Date(data.created_at).getTime();
+    console.log(`Insight created: ${data.id} - ${data.title}`);
+    return c.json({ success: true, message: "Insight criado com sucesso!", insight });
   } catch (error) {
     console.log(`Insight creation error: ${error}`);
     return c.json({ error: "Erro ao criar insight. Tente novamente." }, 500);
   }
 });
 
-// Update existing insight
 app.put("/make-server-4b2936bc/insights/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const insightKey = `insight:${id}`;
-    
-    // Check if insight exists
-    const existing = await kv.get(insightKey);
-    if (!existing) {
-      console.log(`Insight update error: Insight not found - ${id}`);
-      return c.json({ error: "Insight não encontrado" }, 404);
-    }
-
     const body = await c.req.json();
-    const {
-      title,
-      description,
-      category,
-      readTime,
-      icon,
-      iconColor,
-      gradient,
-      content,
-      author,
-      authorRole,
-      date,
-      excerpt,
-      image,
-      tags,
-      contentBlocks,
-      relatedInsights,
-    } = body;
-
-    console.log(`[PUT Insight] Recebendo update para ${id}:`, {
-      title,
-      contentBlocksCount: contentBlocks?.length || 0,
-      hasContentBlocks: !!contentBlocks,
-    });
-
-    // Validation
-    if (!title || !description || !category) {
-      console.log(`Insight update error: Missing required fields`);
+    if (!body.title || !body.description || !body.category) {
       return c.json({ error: "Campos obrigatórios ausentes" }, 400);
     }
 
-    const insightData = {
-      ...(existing as any),
-      title,
-      description,
-      category,
-      readTime: readTime || "5 min",
-      icon: icon || "TrendingUp",
-      iconColor: iconColor || "#1A3E5C",
-      gradient: gradient || "linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)",
-      content: content || "",
-      author: author || "",
-      authorRole: authorRole || "",
-      date: date || new Date().toLocaleDateString('pt-PT'),
-      excerpt: excerpt || description,
-      image: image || "",
-      tags: tags || [],
-      contentBlocks: contentBlocks || [],
-      relatedInsights: relatedInsights || [],
-      updatedAt: new Date().toISOString(),
-    };
+    const dbData = insightToDb(body);
 
-    await kv.set(insightKey, insightData);
-    console.log(`[PUT Insight] ✅ Updated: ${id} - ${title} (${insightData.contentBlocks?.length || 0} blocos)`);
+    const { data, error } = await supabase().from("insights").update(dbData).eq("id", id).select().single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Insight não encontrado" }, 404);
+      throw error;
+    }
 
-    return c.json({
-      success: true,
-      message: "Insight atualizado com sucesso!",
-      insight: insightData,
-    });
+    const insight = insightFromDb(data);
+    insight.timestamp = new Date(data.created_at).getTime();
+    console.log(`Insight updated: ${id} - ${data.title}`);
+    return c.json({ success: true, message: "Insight atualizado com sucesso!", insight });
   } catch (error) {
     console.log(`Insight update error: ${error}`);
     return c.json({ error: "Erro ao atualizar insight. Tente novamente." }, 500);
   }
 });
 
-// Delete insight
 app.delete("/make-server-4b2936bc/insights/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const insightKey = `insight:${id}`;
-    
-    // Check if insight exists
-    const existing = await kv.get(insightKey);
-    if (!existing) {
-      console.log(`Insight deletion error: Insight not found - ${id}`);
-      return c.json({ error: "Insight não encontrado" }, 404);
-    }
-
-    await kv.del(insightKey);
-    console.log(`Insight deleted successfully: ${id}`);
-
-    return c.json({
-      success: true,
-      message: "Insight excluído com sucesso!",
-    });
+    const { error } = await supabase().from("insights").delete().eq("id", id);
+    if (error) throw error;
+    console.log(`Insight deleted: ${id}`);
+    return c.json({ success: true, message: "Insight excluído com sucesso!" });
   } catch (error) {
     console.log(`Insight deletion error: ${error}`);
     return c.json({ error: "Erro ao excluir insight. Tente novamente." }, 500);
   }
 });
 
-// Seed/Populate insights with initial data
-app.post("/make-server-4b2936bc/insights/seed", async (c) => {
-  try {
-    const initialInsights = [
-      {
-        id: '1',
-        title: 'Como avaliar o potencial de valorização de um imóvel urbano',
-        description: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-        category: 'Investimento',
-        readTime: '8 min',
-        icon: 'TrendingUp',
-        iconColor: '#1A3E5C',
-        gradient: 'linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)',
-        author: 'João Silva',
-        authorRole: 'Especialista em Investimento Imobiliário',
-        date: '15 Jan 2024',
-        excerpt: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200',
-        tags: ['Investimento', 'Reabilitação', 'ARU', 'ROI', 'Valorização'],
-        content: 'A reabilitação urbana tornou-se uma das formas mais rentáveis de investimento imobiliário em Portugal...',
-      },
-      {
-        id: '2',
-        title: 'O impacto das zonas ARU na rentabilidade',
-        description: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-        category: 'Regulamentação',
-        readTime: '6 min',
-        icon: 'Building2',
-        iconColor: '#B8956A',
-        gradient: 'linear-gradient(135deg, #B8956A 0%, #D4B896 100%)',
-        author: 'Maria Costa',
-        authorRole: 'Consultora em Reabilitação Urbana',
-        date: '22 Jan 2024',
-        excerpt: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-        image: 'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200',
-        tags: ['ARU', 'Benefícios Fiscais', 'Rentabilidade', 'Regulamentação'],
-        content: 'As Áreas de Reabilitação Urbana (ARU) são zonas territorialmente delimitadas...',
-      },
-      {
-        id: '3',
-        title: 'Reabilitação sustentável: o futuro do mercado imobiliário',
-        description: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-        category: 'Sustentabilidade',
-        readTime: '7 min',
-        icon: 'Leaf',
-        iconColor: '#6B7C93',
-        gradient: 'linear-gradient(135deg, #6B7C93 0%, #8A9BB0 100%)',
-        author: 'Pedro Santos',
-        authorRole: 'Arquiteto Especialista em Sustentabilidade',
-        date: '5 Fev 2024',
-        excerpt: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-        image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200',
-        tags: ['Sustentabilidade', 'Eficiência Energética', 'Certificação', 'Valorização'],
-        content: 'A sustentabilidade deixou de ser uma tendência para se tornar um requisito fundamental...',
-      },
-    ];
+// ============================================================================
+// TESTIMONIALS (PostgreSQL: testimonials table)
+// ============================================================================
 
-    const createdInsights = [];
-    const timestamp = Date.now();
+function testimonialToDb(data: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  if (data.name !== undefined) out.name = data.name;
+  if (data.role !== undefined) out.role = data.role;
+  if (data.company !== undefined) out.company = data.company;
+  if (data.image !== undefined) out.image_url = data.image;
+  if (data.content !== undefined) out.text = data.content;  // KV 'content' → DB 'text'
+  if (data.rating !== undefined) out.rating = data.rating;
+  if (data.published !== undefined) out.published = data.published;
+  return out;
+}
 
-    for (let i = 0; i < initialInsights.length; i++) {
-      const insight = initialInsights[i];
-      const insightKey = `insight:${insight.id}`;
-      
-      // Check if already exists
-      const existing = await kv.get(insightKey);
-      if (existing) {
-        console.log(`Insight already exists, skipping: ${insight.id} - ${insight.title}`);
-        continue;
-      }
+function testimonialFromDb(row: Record<string, any>): Record<string, any> {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    company: row.company,
+    image: row.image_url,
+    content: row.text,  // DB 'text' → response 'content'
+    rating: row.rating,
+    published: row.published,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at || row.created_at,
+    timestamp: new Date(row.created_at).getTime(),
+  };
+}
 
-      const insightData = {
-        ...insight,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        timestamp: timestamp + i,
-      };
-
-      await kv.set(insightKey, insightData);
-      createdInsights.push(insightData);
-      console.log(`Insight seeded: ${insight.id} - ${insight.title}`);
-    }
-
-    console.log(`Seed complete: ${createdInsights.length} insights created`);
-
-    return c.json({
-      success: true,
-      message: `${createdInsights.length} insights criados com sucesso!`,
-      created: createdInsights.length,
-      skipped: initialInsights.length - createdInsights.length,
-      insights: createdInsights,
-    });
-  } catch (error) {
-    console.log(`Insight seed error: ${error}`);
-    return c.json({ error: "Erro ao popular insights. Tente novamente." }, 500);
-  }
-});
-
-// Delete all insights and reseed with complete data
-app.post("/make-server-4b2936bc/insights/reset", async (c) => {
-  try {
-    console.log('[Reset Insights] Starting insights reset...');
-    
-    // Get all insights
-    const insights = await kv.getByPrefix("insight:");
-    console.log(`[Reset Insights] Found ${insights.length} insights to delete`);
-    
-    // Delete all insights
-    const deletePromises = insights.map((insight: any) => {
-      const insightKey = `insight:${insight.id}`;
-      return kv.del(insightKey);
-    });
-    
-    await Promise.all(deletePromises);
-    console.log(`[Reset Insights] ✅ Deleted ${insights.length} insights`);
-    
-    // Recreate insights with full content blocks
-    const completeInsights = [
-      {
-        id: '1',
-        title: 'Como avaliar o potencial de valorização de um imóvel urbano',
-        description: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-        category: 'Investimento',
-        readTime: '8 min',
-        icon: 'TrendingUp',
-        iconColor: '#1A3E5C',
-        gradient: 'linear-gradient(135deg, #1A3E5C 0%, #2C5F7C 100%)',
-        author: 'João Silva',
-        authorRole: 'Especialista em Investimento Imobiliário',
-        date: '15 Jan 2024',
-        excerpt: 'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200',
-        tags: ['Investimento', 'Reabilitação', 'ARU', 'ROI', 'Valorização'],
-        relatedInsights: ['2', '3'],
-        contentBlocks: [
-          {
-            id: 'block-1',
-            type: 'paragraph',
-            content: 'A reabilitação urbana tornou-se uma das formas mais rentáveis de investimento imobiliário em Portugal, especialmente em centros históricos de cidades como Lisboa e Porto. Compreender os fatores que impulsionam a valorização é essencial para o sucesso do investimento.',
-          },
-          {
-            id: 'block-2',
-            type: 'heading2',
-            content: 'Indicadores Fundamentais de Localização',
-          },
-          {
-            id: 'block-3',
-            type: 'paragraph',
-            content: 'A localização continua a ser o fator mais crítico na avaliação do potencial de valorização. Zonas classificadas como ARU (Áreas de Reabilitação Urbana) oferecem benefícios fiscais significativos que podem aumentar o ROI em 15-25%.',
-          },
-          {
-            id: 'block-4',
-            type: 'list',
-            content: [
-              'Proximidade a transportes públicos (metro, comboio) aumenta a valorização em 12-18%',
-              'Acesso a escolas e serviços de qualidade agrega valor premium',
-              'Zonas em gentrificação oferecem potencial de valorização acelerada (20-35%)',
-              'Presença de projetos culturais e criativos indica tendência de crescimento',
-            ],
-          },
-          {
-            id: 'block-5',
-            type: 'heading2',
-            content: 'Análise Técnica do Imóvel',
-          },
-          {
-            id: 'block-6',
-            type: 'paragraph',
-            content: 'A avaliação técnica deve considerar tanto o estado atual quanto o potencial de transformação. Imóveis com características arquitetónicas únicas preserváveis valorizam significativamente mais.',
-          },
-          {
-            id: 'block-7',
-            type: 'callout',
-            content: 'Imóveis com elementos históricos preserváveis (azulejos, cantarias, tectos trabalhados) podem valorizar até 40% acima da média do mercado quando corretamente reabilitados.',
-          },
-          {
-            id: 'block-8',
-            type: 'list',
-            content: [
-              'Estado estrutural e necessidades de intervenção',
-              'Elementos arquitetónicos a preservar ou restaurar',
-              'Potencial de redistribuição de espaços',
-              'Viabilidade de melhorias de eficiência energética',
-            ],
-          },
-          {
-            id: 'block-9',
-            type: 'heading2',
-            content: 'Métricas Financeiras Essenciais',
-          },
-          {
-            id: 'block-10',
-            type: 'paragraph',
-            content: 'A análise financeira deve ir além do preço de aquisição. É crucial calcular o custo total do projeto incluindo margens de contingência e prever o valor final de mercado com base em comparáveis recentes.',
-          },
-          {
-            id: 'block-11',
-            type: 'list',
-            content: [
-              'Cap Rate (taxa de capitalização) ideal entre 5-7% para zonas premium',
-              'ROI esperado de 28-40% em projetos de reabilitação bem executados',
-              'Tempo médio de execução: 8-14 meses para maximizar retorno',
-              'Margem de contingência recomendada: 20% do orçamento de obra',
-            ],
-          },
-        ],
-      },
-      {
-        id: '2',
-        title: 'O impacto das zonas ARU na rentabilidade',
-        description: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-        category: 'Regulamentação',
-        readTime: '6 min',
-        icon: 'Building2',
-        iconColor: '#B8956A',
-        gradient: 'linear-gradient(135deg, #B8956A 0%, #D4B896 100%)',
-        author: 'Maria Costa',
-        authorRole: 'Consultora em Reabilitação Urbana',
-        date: '22 Jan 2024',
-        excerpt: 'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento.',
-        image: 'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200',
-        tags: ['ARU', 'Benefícios Fiscais', 'Rentabilidade', 'Regulamentação'],
-        relatedInsights: ['1', '3'],
-        contentBlocks: [
-          {
-            id: 'block-1',
-            type: 'paragraph',
-            content: 'As Áreas de Reabilitação Urbana (ARU) são zonas territorialmente delimitadas que oferecem benefícios fiscais substanciais para projetos de reabilitação. Compreender estes incentivos é fundamental para maximizar a rentabilidade.',
-          },
-          {
-            id: 'block-2',
-            type: 'heading2',
-            content: 'Benefícios Fiscais Principais',
-          },
-          {
-            id: 'block-3',
-            type: 'paragraph',
-            content: 'As ARU proporcionam um conjunto abrangente de benefícios que reduzem significativamente os custos de reabilitação e aceleram o retorno do investimento.',
-          },
-          {
-            id: 'block-4',
-            type: 'list',
-            content: [
-              'Isenção de IMT (Imposto Municipal sobre Transmissões) na aquisição',
-              'Isenção de IMI (Imposto Municipal sobre Imóveis) até 5 anos após conclusão',
-              'Redução de IVA de 23% para 6% em obras de reabilitação',
-              'Acesso facilitado a financiamento com condições preferenciais',
-            ],
-          },
-          {
-            id: 'block-5',
-            type: 'heading2',
-            content: 'Impacto no ROI',
-          },
-          {
-            id: 'block-6',
-            type: 'callout',
-            content: 'Os benefícios fiscais em ARU podem representar uma economia de 15-25% no custo total do projeto, aumentando o ROI final em 20-30 pontos percentuais.',
-          },
-          {
-            id: 'block-7',
-            type: 'paragraph',
-            content: 'Esta poupança fiscal permite investimentos mais agressivos em qualidade de acabamentos, resultando em imóveis que comandam preços premium no mercado.',
-          },
-        ],
-      },
-      {
-        id: '3',
-        title: 'Reabilitação sustentável: o futuro do mercado imobiliário',
-        description: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-        category: 'Sustentabilidade',
-        readTime: '7 min',
-        icon: 'Leaf',
-        iconColor: '#6B7C93',
-        gradient: 'linear-gradient(135deg, #6B7C93 0%, #8A9BB0 100%)',
-        author: 'Pedro Santos',
-        authorRole: 'Arquiteto Especialista em Sustentabilidade',
-        date: '5 Fev 2024',
-        excerpt: 'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-        image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200',
-        tags: ['Sustentabilidade', 'Eficiência Energética', 'Certificação', 'Valorização'],
-        relatedInsights: ['1', '2'],
-        contentBlocks: [
-          {
-            id: 'block-1',
-            type: 'paragraph',
-            content: 'A sustentabilidade deixou de ser uma tendência para se tornar um requisito fundamental no mercado imobiliário de luxo. Imóveis com certificação energética superior e soluções sustentáveis valorizam mais e vendem mais rapidamente.',
-          },
-          {
-            id: 'block-2',
-            type: 'heading2',
-            content: 'Eficiência Energética como Diferencial',
-          },
-          {
-            id: 'block-3',
-            type: 'paragraph',
-            content: 'A certificação energética tornou-se um dos principais critérios de decisão de compra. Imóveis com certificação A ou A+ comandam um premium de 15-25% no mercado premium.',
-          },
-          {
-            id: 'block-4',
-            type: 'list',
-            content: [
-              'Isolamento térmico e acústico de última geração',
-              'Sistemas de climatização eficientes (bomba de calor, VRV)',
-              'Iluminação LED inteligente com controlo automático',
-              'Vidros duplos ou triplos de alto desempenho',
-            ],
-          },
-          {
-            id: 'block-5',
-            type: 'heading2',
-            content: 'Energias Renováveis Integradas',
-          },
-          {
-            id: 'block-6',
-            type: 'paragraph',
-            content: 'A integração de fontes de energia renovável não só reduz custos operacionais mas também aumenta significativamente a atratividade do imóvel.',
-          },
-          {
-            id: 'block-7',
-            type: 'callout',
-            content: 'Imóveis com painéis solares e sistemas de recuperação de águas pluviais apresentam valorização adicional de 12-18% e redução de 40-60% nos custos de energia.',
-          },
-          {
-            id: 'block-8',
-            type: 'list',
-            content: [
-              'Painéis fotovoltaicos para produção de energia',
-              'Sistemas solares térmicos para aquecimento de águas',
-              'Recuperação e reutilização de águas pluviais',
-              'Sistemas de ventilação com recuperação de calor',
-            ],
-          },
-          {
-            id: 'block-9',
-            type: 'heading2',
-            content: 'Materiais Sustentáveis e Locais',
-          },
-          {
-            id: 'block-10',
-            type: 'paragraph',
-            content: 'A escolha de materiais sustentáveis e de origem local não apenas reduz a pegada de carbono mas também agrega valor através da autenticidade e qualidade.',
-          },
-          {
-            id: 'block-11',
-            type: 'list',
-            content: [
-              'Madeiras certificadas FSC de florestas sustentáveis',
-              'Pedras naturais portuguesas (Lioz, Estremoz, Pedras Salgadas)',
-              'Cortiça nacional em isolamentos e revestimentos',
-              'Tintas e acabamentos de baixa emissão de VOC',
-            ],
-          },
-          {
-            id: 'block-12',
-            type: 'heading2',
-            content: 'ROI da Sustentabilidade',
-          },
-          {
-            id: 'block-13',
-            type: 'paragraph',
-            content: 'Investir em soluções sustentáveis representa um custo adicional de 8-12% no orçamento de obra, mas gera retorno através de valorização premium, vendas mais rápidas e redução de custos operacionais.',
-          },
-          {
-            id: 'block-14',
-            type: 'paragraph',
-            content: 'Dados de mercado demonstram que imóveis sustentáveis vendem em média 25% mais rápido e com valorização 18% superior a imóveis convencionais na mesma localização.',
-          },
-        ],
-      },
-    ];
-
-    // Create new insights with complete content blocks
-    const timestamp = Date.now();
-    for (let i = 0; i < completeInsights.length; i++) {
-      const insight = completeInsights[i];
-      const insightKey = `insight:${insight.id}`;
-      
-      const insightData = {
-        ...insight,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        timestamp: timestamp + i,
-      };
-
-      await kv.set(insightKey, insightData);
-      console.log(`[Reset Insights] Created: ${insight.id} - ${insight.title}`);
-    }
-    
-    console.log(`[Reset Insights] ✅ Reset complete with ${completeInsights.length} new insights`);
-    
-    return c.json({
-      success: true,
-      message: `Insights resetados! ${completeInsights.length} insights criados com conteúdo completo.`,
-      deleted: insights.length,
-      created: completeInsights.length,
-    });
-  } catch (error) {
-    console.log(`[Reset Insights] ❌ Error: ${error}`);
-    return c.json({ error: "Erro ao resetar insights." }, 500);
-  }
-});
-
-// ========================================
-// TESTIMONIALS ENDPOINTS
-// ========================================
-
-// Get all testimonials
 app.get("/make-server-4b2936bc/testimonials", async (c) => {
   try {
-    let testimonials = await kv.getByPrefix("testimonial:");
-    console.log(`Retrieved ${testimonials.length} testimonials from database`);
-    
-    // Auto-seed if empty
-    if (testimonials.length === 0) {
-      console.log('[Testimonials] No testimonials found, auto-seeding...');
-      const initialTestimonials = [
-        {
-          id: '1',
-          name: 'Dr. Miguel Santos',
-          role: 'Investidor',
-          company: 'Portfolio Privado',
-          image: 'https://images.unsplash.com/photo-1758518727888-ffa196002e59?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBlcnNvbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2MTc2MTgwN3ww&ixlib=rb-4.1.0&q=55&w=480',
-          content: 'A HABTA ajudou-me a investir com clareza e sem surpresas. A gestão transparente e o processo estruturado garantiram previsibilidade em todos os projetos.',
-          rating: 5,
-          project: '2 projetos concluídos',
-          order: 1,
-        },
-        {
-          id: '2',
-          name: 'Ana Rodrigues',
-          role: 'Proprietária',
-          company: 'Venda de Imóvel',
-          image: 'https://images.unsplash.com/photo-1737066894976-dd00d3fafaf5?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnZlc3RvciUyMHByb2Zlc3Npb25hbCUyMGhlYWRzaG90fGVufDF8fHx8MTc2MTg1MzQ4Mnww&ixlib=rb-4.1.0&q=55&w=480',
-          content: 'O profissionalismo técnico e a comunicação constante fizeram toda a diferença. Processo seguro do início ao fim, com resultado muito acima das expectativas.',
-          rating: 5,
-          project: 'Apartamento Lisboa | Vendido em 45 dias',
-          order: 2,
-        },
-        {
-          id: '3',
-          name: 'Carlos Mendes',
-          role: 'Investidor Institucional',
-          company: 'Family Office',
-          image: 'https://images.unsplash.com/photo-1708195886023-3ecb00ac7a49?crop=entropy&cs=tinysrgb&fit=crop&fm=avif&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGV4ZWN1dGl2ZSUyMHBvcnRyYWl0fGVufDF8fHx8MTc2MTc1ODMwMHww&ixlib=rb-4.1.0&q=55&w=480',
-          content: 'A metodologia estruturada e a gestão financeira transparente garantem previsibilidade em todos os projetos. Análise técnica detalhada e execução controlada com resultados consistentes.',
-          rating: 5,
-          project: '5 projetos | €2.4M investidos',
-          order: 3,
-        },
-      ];
-      
-      const timestamp = Date.now();
-      for (let i = 0; i < initialTestimonials.length; i++) {
-        const testimonial = initialTestimonials[i];
-        const testimonialData = {
-          ...testimonial,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          timestamp: timestamp + i,
-        };
-        await kv.set(`testimonial:${testimonial.id}`, testimonialData);
-        console.log(`Auto-seeded testimonial: ${testimonial.id} - ${testimonial.name}`);
-      }
-      
-      // Fetch again after seeding
-      testimonials = await kv.getByPrefix("testimonial:");
-      console.log(`Auto-seed complete: ${testimonials.length} testimonials created`);
-    }
-    
-    const sortedTestimonials = testimonials.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
-    console.log(`Retrieved ${testimonials.length} testimonials`);
-    return c.json({ success: true, testimonials: sortedTestimonials, count: testimonials.length });
+    const { data, error } = await supabase()
+      .from("testimonials")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const testimonials = (data || []).map(testimonialFromDb);
+    return c.json({ success: true, testimonials, count: testimonials.length });
   } catch (error) {
     console.log(`Error retrieving testimonials: ${error}`);
     return c.json({ error: "Erro ao buscar depoimentos" }, 500);
   }
 });
 
-// Get single testimonial by ID
 app.get("/make-server-4b2936bc/testimonials/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const testimonialKey = `testimonial:${id}`;
-    const testimonial = await kv.get(testimonialKey);
-    
-    if (!testimonial) {
-      console.log(`Testimonial not found: ${id}`);
-      return c.json({ error: "Depoimento não encontrado" }, 404);
+    const { data, error } = await supabase().from("testimonials").select("*").eq("id", id).single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Depoimento não encontrado" }, 404);
+      throw error;
     }
-    
-    console.log(`Retrieved testimonial: ${id}`);
-    return c.json({ success: true, testimonial });
+    return c.json({ success: true, testimonial: testimonialFromDb(data) });
   } catch (error) {
     console.log(`Error retrieving testimonial: ${error}`);
     return c.json({ error: "Erro ao buscar depoimento" }, 500);
   }
 });
 
-// Create new testimonial
 app.post("/make-server-4b2936bc/testimonials", async (c) => {
   try {
     const body = await c.req.json();
-    const {
-      name,
-      role,
-      company,
-      image,
-      content,
-      rating,
-      project,
-      order,
-    } = body;
-
-    // Validation
-    if (!name || !role || !content) {
-      console.log(`Testimonial creation error: Missing required fields`);
+    if (!body.name || !body.role || !body.content) {
       return c.json({ error: "Campos obrigatórios ausentes (nome, cargo, depoimento)" }, 400);
     }
 
-    // Generate ID
-    const timestamp = Date.now();
-    const id = `${timestamp}`;
-    const testimonialKey = `testimonial:${id}`;
+    const dbData = testimonialToDb(body);
+    const { data, error } = await supabase().from("testimonials").insert(dbData).select().single();
+    if (error) throw error;
 
-    const testimonialData = {
-      id,
-      name,
-      role,
-      company: company || '',
-      image: image || '',
-      content,
-      rating: rating || 5,
-      project: project || '',
-      order: order || 999,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      timestamp,
-    };
-
-    await kv.set(testimonialKey, testimonialData);
-    console.log(`Testimonial created: ${id} - ${name}`);
-
-    return c.json({
-      success: true,
-      message: "Depoimento criado com sucesso!",
-      testimonial: testimonialData,
-    });
+    console.log(`Testimonial created: ${data.id} - ${data.name}`);
+    return c.json({ success: true, message: "Depoimento criado com sucesso!", testimonial: testimonialFromDb(data) });
   } catch (error) {
     console.log(`Testimonial creation error: ${error}`);
     return c.json({ error: "Erro ao criar depoimento. Tente novamente." }, 500);
   }
 });
 
-// Update testimonial
 app.put("/make-server-4b2936bc/testimonials/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const testimonialKey = `testimonial:${id}`;
     const body = await c.req.json();
-    const {
-      name,
-      role,
-      company,
-      image,
-      content,
-      rating,
-      project,
-      order,
-    } = body;
-
-    // Check if testimonial exists
-    const existing = await kv.get(testimonialKey);
-    if (!existing) {
-      console.log(`Testimonial update error: Testimonial not found - ${id}`);
-      return c.json({ error: "Depoimento não encontrado" }, 404);
-    }
-
-    // Validation
-    if (!name || !role || !content) {
-      console.log(`Testimonial update error: Missing required fields`);
+    if (!body.name || !body.role || !body.content) {
       return c.json({ error: "Campos obrigatórios ausentes" }, 400);
     }
 
-    const testimonialData = {
-      ...(existing as any),
-      name,
-      role,
-      company: company || '',
-      image: image || '',
-      content,
-      rating: rating || 5,
-      project: project || '',
-      order: order !== undefined ? order : (existing as any).order,
-      updatedAt: new Date().toISOString(),
-    };
+    const dbData = testimonialToDb(body);
+    const { data, error } = await supabase().from("testimonials").update(dbData).eq("id", id).select().single();
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Depoimento não encontrado" }, 404);
+      throw error;
+    }
 
-    await kv.set(testimonialKey, testimonialData);
-    console.log(`Testimonial updated: ${id} - ${name}`);
-
-    return c.json({
-      success: true,
-      message: "Depoimento atualizado com sucesso!",
-      testimonial: testimonialData,
-    });
+    console.log(`Testimonial updated: ${id} - ${data.name}`);
+    return c.json({ success: true, message: "Depoimento atualizado com sucesso!", testimonial: testimonialFromDb(data) });
   } catch (error) {
     console.log(`Testimonial update error: ${error}`);
     return c.json({ error: "Erro ao atualizar depoimento. Tente novamente." }, 500);
   }
 });
 
-// Delete testimonial
 app.delete("/make-server-4b2936bc/testimonials/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const testimonialKey = `testimonial:${id}`;
-    
-    // Check if testimonial exists
-    const existing = await kv.get(testimonialKey);
-    if (!existing) {
-      console.log(`Testimonial deletion error: Testimonial not found - ${id}`);
-      return c.json({ error: "Depoimento não encontrado" }, 404);
-    }
-
-    await kv.del(testimonialKey);
-    console.log(`Testimonial deleted successfully: ${id}`);
-
-    return c.json({
-      success: true,
-      message: "Depoimento excluído com sucesso!",
-    });
+    const { error } = await supabase().from("testimonials").delete().eq("id", id);
+    if (error) throw error;
+    console.log(`Testimonial deleted: ${id}`);
+    return c.json({ success: true, message: "Depoimento excluído com sucesso!" });
   } catch (error) {
     console.log(`Testimonial deletion error: ${error}`);
     return c.json({ error: "Erro ao excluir depoimento. Tente novamente." }, 500);
   }
 });
 
-// ============================================
-// IMAGE UPLOAD ENDPOINTS
-// ============================================
+// ============================================================================
+// FOLLOW-UPS (PostgreSQL: followups table)
+// ============================================================================
 
-// Upload image for projects
-app.post("/make-server-4b2936bc/upload/projects", async (c) => {
+app.get("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
+  try {
+    const contactId = c.req.param("id");
+    const { data, error } = await supabase()
+      .from("followups")
+      .select("*")
+      .eq("contact_id", contactId)
+      .order("due_date", { ascending: true });
+
+    if (error) throw error;
+
+    const followups = (data || []).map((row: any) => {
+      const f = toCamel(row);
+      f.timestamp = new Date(row.created_at).getTime();
+      return f;
+    });
+
+    return c.json({ success: true, followups, count: followups.length });
+  } catch (error) {
+    console.log(`Error retrieving followups: ${error}`);
+    return c.json({ error: "Erro ao buscar follow-ups" }, 500);
+  }
+});
+
+app.post("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
+  try {
+    const contactId = c.req.param("id");
+    const body = await c.req.json();
+    const { title, type, dueDate, dueTime, priority, notes } = body || {};
+
+    if (!title || !type || !dueDate || !priority) {
+      return c.json({ error: "Título, tipo, data e prioridade são obrigatórios" }, 400);
+    }
+
+    const { data, error } = await supabase()
+      .from("followups")
+      .insert({
+        contact_id: contactId,
+        title,
+        type,
+        due_date: dueDate,
+        due_time: dueTime || null,
+        priority,
+        notes: notes || "",
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const followup = toCamel(data);
+    followup.timestamp = new Date(data.created_at).getTime();
+    console.log(`Follow-up created for ${contactId}: ${type} - ${title}`);
+    return c.json({ success: true, followup });
+  } catch (error) {
+    console.log(`Error creating followup: ${error}`);
+    return c.json({ error: "Erro ao criar follow-up" }, 500);
+  }
+});
+
+app.put("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
+  try {
+    const fid = c.req.param("fid");
+    const body = await c.req.json();
+
+    const updateData: Record<string, any> = {};
+    const fieldMap: Record<string, string> = {
+      title: "title",
+      type: "type",
+      dueDate: "due_date",
+      dueTime: "due_time",
+      priority: "priority",
+      notes: "notes",
+      status: "status",
+      outcome: "outcome",
+      outcomeNotes: "outcome_notes",
+    };
+
+    for (const [camel, snake] of Object.entries(fieldMap)) {
+      if (body[camel] !== undefined) updateData[snake] = body[camel];
+    }
+
+    // Auto-set completedAt when status becomes completed
+    if (body.status === "completed") {
+      updateData.completed_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase()
+      .from("followups")
+      .update(updateData)
+      .eq("id", fid)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return c.json({ error: "Follow-up não encontrado" }, 404);
+      throw error;
+    }
+
+    const followup = toCamel(data);
+    followup.timestamp = new Date(data.created_at).getTime();
+    return c.json({ success: true, followup });
+  } catch (error) {
+    console.log(`Error updating followup: ${error}`);
+    return c.json({ error: "Erro ao atualizar follow-up" }, 500);
+  }
+});
+
+app.delete("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
+  try {
+    const fid = c.req.param("fid");
+    const { error } = await supabase().from("followups").delete().eq("id", fid);
+    if (error) throw error;
+    return c.json({ success: true, message: "Follow-up eliminado" });
+  } catch (error) {
+    console.log(`Error deleting followup: ${error}`);
+    return c.json({ error: "Erro ao eliminar follow-up" }, 500);
+  }
+});
+
+app.get("/make-server-4b2936bc/followups/pending", async (c) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase()
+      .from("followups")
+      .select("*")
+      .eq("status", "pending")
+      .order("due_date", { ascending: true });
+
+    if (error) throw error;
+
+    const followups = (data || []).map((row: any) => {
+      const f = toCamel(row);
+      f.isOverdue = row.due_date < today;
+      f.timestamp = new Date(row.created_at).getTime();
+      return f;
+    });
+
+    return c.json({ success: true, followups, count: followups.length });
+  } catch (error) {
+    console.log(`Error retrieving pending followups: ${error}`);
+    return c.json({ error: "Erro ao buscar follow-ups pendentes" }, 500);
+  }
+});
+
+// ============================================================================
+// IMAGE UPLOAD (unchanged — already uses Supabase Storage)
+// ============================================================================
+
+async function handleImageUpload(c: any, bucketName: string, folder: string) {
   try {
     const formData = await c.req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get("file") as File;
     if (!file) return c.json({ error: "Nenhum arquivo foi enviado" }, 400);
-    if (!file.type.startsWith('image/')) return c.json({ error: "Apenas imagens são permitidas" }, 400);
+    if (!file.type.startsWith("image/")) return c.json({ error: "Apenas imagens são permitidas" }, 400);
     if (file.size > 5 * 1024 * 1024) return c.json({ error: "A imagem deve ter no máximo 5MB" }, 400);
 
-    const { createClient } = await import('jsr:@supabase/supabase-js@2');
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const bucketName = 'make-4b2936bc-projects';
-    
-    const { data: buckets } = await supabase.storage.listBuckets();
+    const sb = supabase();
+    const { data: buckets } = await sb.storage.listBuckets();
     if (!buckets?.some((b: any) => b.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, { public: false, fileSizeLimit: 5242880 });
+      await sb.storage.createBucket(bucketName, { public: false, fileSizeLimit: 5242880 });
     }
 
     const timestamp = Date.now();
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split(".").pop();
     const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `projects/${fileName}`;
+    const filePath = `${folder}/${fileName}`;
     const arrayBuffer = await file.arrayBuffer();
-    
-    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, arrayBuffer, { contentType: file.type });
+
+    const { error: uploadError } = await sb.storage.from(bucketName).upload(filePath, arrayBuffer, { contentType: file.type });
     if (uploadError) {
       console.log(`Upload error:`, uploadError);
       return c.json({ error: "Erro ao fazer upload da imagem" }, 500);
     }
 
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from(bucketName).createSignedUrl(filePath, 315360000);
+    const { data: signedUrlData, error: signedUrlError } = await sb.storage.from(bucketName).createSignedUrl(filePath, 315360000);
     if (signedUrlError) {
       console.log(`Signed URL error:`, signedUrlError);
       return c.json({ error: "Erro ao gerar URL da imagem" }, 500);
     }
 
-    console.log(`Image uploaded successfully: ${filePath}`);
+    console.log(`Image uploaded: ${filePath}`);
     return c.json({ success: true, url: signedUrlData.signedUrl, path: filePath });
   } catch (error) {
     console.log(`Image upload error: ${error}`);
     return c.json({ error: "Erro ao processar upload" }, 500);
   }
-});
+}
 
-// Upload image for insights
-app.post("/make-server-4b2936bc/upload/insights", async (c) => {
-  try {
-    const formData = await c.req.formData();
-    const file = formData.get('file') as File;
-    if (!file) return c.json({ error: "Nenhum arquivo foi enviado" }, 400);
-    if (!file.type.startsWith('image/')) return c.json({ error: "Apenas imagens são permitidas" }, 400);
-    if (file.size > 5 * 1024 * 1024) return c.json({ error: "A imagem deve ter no máximo 5MB" }, 400);
+app.post("/make-server-4b2936bc/upload/projects", (c) => handleImageUpload(c, "make-4b2936bc-projects", "projects"));
+app.post("/make-server-4b2936bc/upload/insights", (c) => handleImageUpload(c, "make-4b2936bc-insights", "insights"));
+app.post("/make-server-4b2936bc/upload/testimonials", (c) => handleImageUpload(c, "make-4b2936bc-testimonials", "testimonials"));
+app.post("/make-server-4b2936bc/upload/units", (c) => handleImageUpload(c, "make-4b2936bc-units", "units"));
 
-    const { createClient } = await import('jsr:@supabase/supabase-js@2');
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const bucketName = 'make-4b2936bc-insights';
-    
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.some((b: any) => b.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, { public: false, fileSizeLimit: 5242880 });
-    }
-
-    const timestamp = Date.now();
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `insights/${fileName}`;
-    const arrayBuffer = await file.arrayBuffer();
-    
-    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, arrayBuffer, { contentType: file.type });
-    if (uploadError) {
-      console.log(`Upload error:`, uploadError);
-      return c.json({ error: "Erro ao fazer upload da imagem" }, 500);
-    }
-
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from(bucketName).createSignedUrl(filePath, 315360000);
-    if (signedUrlError) {
-      console.log(`Signed URL error:`, signedUrlError);
-      return c.json({ error: "Erro ao gerar URL da imagem" }, 500);
-    }
-
-    console.log(`Image uploaded successfully: ${filePath}`);
-    return c.json({ success: true, url: signedUrlData.signedUrl, path: filePath });
-  } catch (error) {
-    console.log(`Image upload error: ${error}`);
-    return c.json({ error: "Erro ao processar upload" }, 500);
-  }
-});
-
-// Upload image for testimonials
-app.post("/make-server-4b2936bc/upload/testimonials", async (c) => {
-  try {
-    const formData = await c.req.formData();
-    const file = formData.get('file') as File;
-    if (!file) return c.json({ error: "Nenhum arquivo foi enviado" }, 400);
-    if (!file.type.startsWith('image/')) return c.json({ error: "Apenas imagens são permitidas" }, 400);
-    if (file.size > 5 * 1024 * 1024) return c.json({ error: "A imagem deve ter no máximo 5MB" }, 400);
-
-    const { createClient } = await import('jsr:@supabase/supabase-js@2');
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const bucketName = 'make-4b2936bc-testimonials';
-    
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.some((b: any) => b.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, { public: false, fileSizeLimit: 5242880 });
-    }
-
-    const timestamp = Date.now();
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `testimonials/${fileName}`;
-    const arrayBuffer = await file.arrayBuffer();
-    
-    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, arrayBuffer, { contentType: file.type });
-    if (uploadError) {
-      console.log(`Upload error:`, uploadError);
-      return c.json({ error: "Erro ao fazer upload da imagem" }, 500);
-    }
-
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage.from(bucketName).createSignedUrl(filePath, 315360000);
-    if (signedUrlError) {
-      console.log(`Signed URL error:`, signedUrlError);
-      return c.json({ error: "Erro ao gerar URL da imagem" }, 500);
-    }
-
-    console.log(`Image uploaded successfully: ${filePath}`);
-    return c.json({ success: true, url: signedUrlData.signedUrl, path: filePath });
-  } catch (error) {
-    console.log(`Image upload error: ${error}`);
-    return c.json({ error: "Erro ao processar upload" }, 500);
-  }
-});
-
-// ============================================
-// CONTROLO (Multi-Project Dashboard) CRUD ENDPOINTS
-// ============================================
+// ============================================================================
+// CONTROLO (stays on KV — internal management, not public-facing)
+// ============================================================================
 
 // --- Controlo Projects ---
 app.get("/make-server-4b2936bc/controlo/projects", async (c) => {
   try {
     const items = await kv.getByPrefix("controlo:project:");
-    const sorted = items.sort((a: any, b: any) => (a.label || '').localeCompare(b.label || ''));
+    const sorted = items.sort((a: any, b: any) => (a.label || "").localeCompare(b.label || ""));
     return c.json({ success: true, projects: sorted, count: sorted.length });
   } catch (error) {
     console.log(`Error retrieving controlo projects: ${error}`);
@@ -1990,8 +1253,7 @@ app.put("/make-server-4b2936bc/controlo/projects/:id", async (c) => {
 app.delete("/make-server-4b2936bc/controlo/projects/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    const key = `controlo:project:${id}`;
-    await kv.del(key);
+    await kv.del(`controlo:project:${id}`);
     return c.json({ success: true, message: "Projeto de controlo eliminado" });
   } catch (error) {
     console.log(`Error deleting controlo project: ${error}`);
@@ -1999,13 +1261,13 @@ app.delete("/make-server-4b2936bc/controlo/projects/:id", async (c) => {
   }
 });
 
-// --- Units ---
+// --- Controlo Units ---
 app.get("/make-server-4b2936bc/controlo/units", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
     const items = await kv.getByPrefix(`controlo:unit:${projectId}:`);
-    const sorted = items.sort((a: any, b: any) => (a.code || '').localeCompare(b.code || ''));
+    const sorted = items.sort((a: any, b: any) => (a.code || "").localeCompare(b.code || ""));
     return c.json({ success: true, units: sorted, count: sorted.length });
   } catch (error) {
     console.log(`Error retrieving controlo units: ${error}`);
@@ -2053,8 +1315,7 @@ app.delete("/make-server-4b2936bc/controlo/units/:id", async (c) => {
     const id = c.req.param("id");
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
-    const key = `controlo:unit:${projectId}:${id}`;
-    await kv.del(key);
+    await kv.del(`controlo:unit:${projectId}:${id}`);
     return c.json({ success: true, message: "Unidade eliminada" });
   } catch (error) {
     console.log(`Error deleting controlo unit: ${error}`);
@@ -2062,13 +1323,12 @@ app.delete("/make-server-4b2936bc/controlo/units/:id", async (c) => {
   }
 });
 
-// --- Targets ---
+// --- Controlo Targets ---
 app.get("/make-server-4b2936bc/controlo/targets", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
-    const key = `controlo:targets:${projectId}`;
-    const targets = await kv.get(key);
+    const targets = await kv.get(`controlo:targets:${projectId}`);
     return c.json({ success: true, targets: targets || null });
   } catch (error) {
     console.log(`Error retrieving controlo targets: ${error}`);
@@ -2091,13 +1351,13 @@ app.put("/make-server-4b2936bc/controlo/targets", async (c) => {
   }
 });
 
-// --- Review Dates ---
+// --- Controlo Reviews ---
 app.get("/make-server-4b2936bc/controlo/reviews", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
     const items = await kv.getByPrefix(`controlo:review:${projectId}:`);
-    const sorted = items.sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''));
+    const sorted = items.sort((a: any, b: any) => (a.date || "").localeCompare(b.date || ""));
     return c.json({ success: true, reviews: sorted, count: sorted.length });
   } catch (error) {
     console.log(`Error retrieving controlo reviews: ${error}`);
@@ -2113,9 +1373,8 @@ app.post("/make-server-4b2936bc/controlo/reviews", async (c) => {
     const timestamp = Date.now();
     const id = `${timestamp}`;
     const key = `controlo:review:${projectId}:${id}`;
-    const data = { ...body, id, timestamp };
-    await kv.set(key, data);
-    return c.json({ success: true, review: data });
+    await kv.set(key, { ...body, id, timestamp });
+    return c.json({ success: true, review: { ...body, id, timestamp } });
   } catch (error) {
     console.log(`Error creating controlo review: ${error}`);
     return c.json({ error: "Erro ao criar data de revisão" }, 500);
@@ -2145,8 +1404,7 @@ app.delete("/make-server-4b2936bc/controlo/reviews/:id", async (c) => {
     const id = c.req.param("id");
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
-    const key = `controlo:review:${projectId}:${id}`;
-    await kv.del(key);
+    await kv.del(`controlo:review:${projectId}:${id}`);
     return c.json({ success: true, message: "Data de revisão eliminada" });
   } catch (error) {
     console.log(`Error deleting controlo review: ${error}`);
@@ -2154,13 +1412,13 @@ app.delete("/make-server-4b2936bc/controlo/reviews/:id", async (c) => {
   }
 });
 
-// --- Weekly Logs ---
+// --- Controlo Weekly Logs ---
 app.get("/make-server-4b2936bc/controlo/weeklylogs", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
     const items = await kv.getByPrefix(`controlo:wlog:${projectId}:`);
-    const sorted = items.sort((a: any, b: any) => (b.weekStart || '').localeCompare(a.weekStart || ''));
+    const sorted = items.sort((a: any, b: any) => (b.weekStart || "").localeCompare(a.weekStart || ""));
     return c.json({ success: true, weeklylogs: sorted, count: sorted.length });
   } catch (error) {
     console.log(`Error retrieving controlo weeklylogs: ${error}`);
@@ -2176,9 +1434,8 @@ app.post("/make-server-4b2936bc/controlo/weeklylogs", async (c) => {
     const timestamp = Date.now();
     const id = `${timestamp}`;
     const key = `controlo:wlog:${projectId}:${id}`;
-    const data = { ...body, id, timestamp };
-    await kv.set(key, data);
-    return c.json({ success: true, weeklylog: data });
+    await kv.set(key, { ...body, id, timestamp });
+    return c.json({ success: true, weeklylog: { ...body, id, timestamp } });
   } catch (error) {
     console.log(`Error creating controlo weeklylog: ${error}`);
     return c.json({ error: "Erro ao criar registo semanal" }, 500);
@@ -2208,8 +1465,7 @@ app.delete("/make-server-4b2936bc/controlo/weeklylogs/:id", async (c) => {
     const id = c.req.param("id");
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
-    const key = `controlo:wlog:${projectId}:${id}`;
-    await kv.del(key);
+    await kv.del(`controlo:wlog:${projectId}:${id}`);
     return c.json({ success: true, message: "Registo semanal eliminado" });
   } catch (error) {
     console.log(`Error deleting controlo weeklylog: ${error}`);
@@ -2217,13 +1473,13 @@ app.delete("/make-server-4b2936bc/controlo/weeklylogs/:id", async (c) => {
   }
 });
 
-// --- Competitors ---
+// --- Controlo Competitors ---
 app.get("/make-server-4b2936bc/controlo/competitors", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
     const items = await kv.getByPrefix(`controlo:comp:${projectId}:`);
-    const sorted = items.sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''));
+    const sorted = items.sort((a: any, b: any) => (b.date || "").localeCompare(a.date || ""));
     return c.json({ success: true, competitors: sorted, count: sorted.length });
   } catch (error) {
     console.log(`Error retrieving controlo competitors: ${error}`);
@@ -2238,10 +1494,9 @@ app.post("/make-server-4b2936bc/controlo/competitors", async (c) => {
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
     const timestamp = Date.now();
     const id = `${timestamp}`;
-    const key = `controlo:comp:${projectId}:${id}`;
     const pricePerM2 = body.area > 0 ? Math.round(body.price / body.area) : 0;
     const data = { ...body, id, pricePerM2, timestamp };
-    await kv.set(key, data);
+    await kv.set(`controlo:comp:${projectId}:${id}`, data);
     return c.json({ success: true, competitor: data });
   } catch (error) {
     console.log(`Error creating controlo competitor: ${error}`);
@@ -2273,8 +1528,7 @@ app.delete("/make-server-4b2936bc/controlo/competitors/:id", async (c) => {
     const id = c.req.param("id");
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
-    const key = `controlo:comp:${projectId}:${id}`;
-    await kv.del(key);
+    await kv.del(`controlo:comp:${projectId}:${id}`);
     return c.json({ success: true, message: "Concorrente eliminado" });
   } catch (error) {
     console.log(`Error deleting controlo competitor: ${error}`);
@@ -2282,106 +1536,101 @@ app.delete("/make-server-4b2936bc/controlo/competitors/:id", async (c) => {
   }
 });
 
-// --- Auto KPIs (computed from pipeline leads) ---
+// --- Auto KPIs (reads from PostgreSQL contacts + KV controlo) ---
 app.get("/make-server-4b2936bc/controlo/auto-kpis", async (c) => {
   try {
     const projectId = c.req.query("projectId");
     if (!projectId) return c.json({ error: "projectId é obrigatório" }, 400);
 
-    // Fetch all contacts and controlo units/targets for this project
-    const [allContacts, units, targets] = await Promise.all([
-      kv.getByPrefix("contact:"),
+    // Fetch contacts from PostgreSQL, controlo data from KV
+    const [contactsResult, units, targets] = await Promise.all([
+      supabase().from("contacts").select("*"),
       kv.getByPrefix(`controlo:unit:${projectId}:`),
       kv.get(`controlo:targets:${projectId}`),
     ]);
 
-    // Filter contacts for this project
-    const contacts = (allContacts as any[]).filter((ct: any) => ct.projectId === projectId);
+    const allContacts = contactsResult.data || [];
+    // Filter contacts for this project (check both source_id and property_id)
+    const contacts = allContacts.filter(
+      (ct: any) => ct.source_id === projectId || ct.property_id === projectId
+    );
 
-    // Stage hierarchy
     const stageOrder: Record<string, number> = {
       novo: 0, contato: 1, qualificado: 2, visita: 3,
       proposta: 4, negociacao: 5, ganho: 6, perdido: -1,
     };
-    const stageKeys = ['novo', 'contato', 'qualificado', 'visita', 'proposta', 'negociacao', 'ganho', 'perdido'];
+    const stageKeys = ["novo", "contato", "qualificado", "visita", "proposta", "negociacao", "ganho", "perdido"];
 
     const now = Date.now();
     const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
-    // Exclude "perdido" from active counts
-    const active = contacts.filter((ct: any) => (ct.pipelineStage || 'novo') !== 'perdido');
+    const active = contacts.filter((ct: any) => (ct.pipeline_stage || "novo") !== "perdido");
+    const getTs = (ct: any) => new Date(ct.created_at).getTime();
 
-    // Time-filtered
-    const created14d = active.filter((ct: any) => (now - (ct.timestamp || 0)) <= fourteenDaysMs);
-    const created30d = active.filter((ct: any) => (now - (ct.timestamp || 0)) <= thirtyDaysMs);
+    const created14d = active.filter((ct: any) => now - getTs(ct) <= fourteenDaysMs);
+    const created30d = active.filter((ct: any) => now - getTs(ct) <= thirtyDaysMs);
 
-    // Global metrics
     const totalLeads14d = created14d.length;
-    const qualifiedLeads14d = created14d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 2).length;
-    const visits14d = created14d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 3).length;
-    const proposals30d = created30d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 4).length;
+    const qualifiedLeads14d = created14d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 2).length;
+    const visits14d = created14d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 3).length;
+    const proposals30d = created30d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 4).length;
 
-    // Best offer
-    const proposalContacts = active.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 4 && (ct.proposalValue || 0) > 0);
-    const bestOffer = proposalContacts.length > 0 ? Math.max(...proposalContacts.map((ct: any) => ct.proposalValue || 0)) : 0;
+    const proposalContacts = active.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 4 && (ct.max_budget || 0) > 0);
+    const bestOffer = proposalContacts.length > 0 ? Math.max(...proposalContacts.map((ct: any) => Number(ct.max_budget) || 0)) : 0;
 
-    // Leads by stage
     const leadsByStage: Record<string, number> = {};
     stageKeys.forEach((s) => { leadsByStage[s] = 0; });
     contacts.forEach((ct: any) => {
-      const s = ct.pipelineStage || 'novo';
+      const s = ct.pipeline_stage || "novo";
       leadsByStage[s] = (leadsByStage[s] || 0) + 1;
     });
 
-    // Conversion rates
     const leadToVisitRate = totalLeads14d > 0 ? Math.round((visits14d / totalLeads14d) * 1000) / 10 : 0;
     const visitToProposalRate = visits14d > 0 ? Math.round((proposals30d / visits14d) * 1000) / 10 : 0;
 
-    // Status based on targets
     const tgt = targets as any;
-    let status = 'SEM_DADOS';
+    let status = "SEM_DADOS";
     if (contacts.length > 0 && tgt) {
       let metCount = 0;
       if (qualifiedLeads14d >= (tgt.qualifiedLeads14d || 0)) metCount++;
       if (visits14d >= (tgt.visits14d || 0)) metCount++;
       if (proposals30d >= (tgt.proposals30d || 0)) metCount++;
-      if (metCount === 3) status = 'MANTER';
-      else if (metCount >= 1) status = 'VIGIAR';
-      else status = 'REDUZIR';
-    } else if (contacts.length > 0 && !tgt) {
-      status = 'VIGIAR';
+      if (metCount === 3) status = "MANTER";
+      else if (metCount >= 1) status = "VIGIAR";
+      else status = "REDUZIR";
+    } else if (contacts.length > 0) {
+      status = "VIGIAR";
     }
 
-    // Per-unit breakdown
     const unitList = (units as any[]) || [];
     const perUnit = unitList.map((unit: any) => {
-      const unitContacts = contacts.filter((ct: any) => ct.unitId === unit.id);
-      const unitActive = unitContacts.filter((ct: any) => (ct.pipelineStage || 'novo') !== 'perdido');
-      const unitCreated14d = unitActive.filter((ct: any) => (now - (ct.timestamp || 0)) <= fourteenDaysMs);
-      const unitCreated30d = unitActive.filter((ct: any) => (now - (ct.timestamp || 0)) <= thirtyDaysMs);
+      const unitContacts = contacts.filter((ct: any) => ct.source_id === unit.id || ct.property_id === unit.id);
+      const unitActive = unitContacts.filter((ct: any) => (ct.pipeline_stage || "novo") !== "perdido");
+      const unitCreated14d = unitActive.filter((ct: any) => now - getTs(ct) <= fourteenDaysMs);
+      const unitCreated30d = unitActive.filter((ct: any) => now - getTs(ct) <= thirtyDaysMs);
 
       const uTotalLeads14d = unitCreated14d.length;
-      const uQualifiedLeads14d = unitCreated14d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 2).length;
-      const uVisits14d = unitCreated14d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 3).length;
-      const uProposals30d = unitCreated30d.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 4).length;
-      const uProposalContacts = unitActive.filter((ct: any) => stageOrder[ct.pipelineStage || 'novo'] >= 4 && (ct.proposalValue || 0) > 0);
-      const uBestOffer = uProposalContacts.length > 0 ? Math.max(...uProposalContacts.map((ct: any) => ct.proposalValue || 0)) : 0;
+      const uQualifiedLeads14d = unitCreated14d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 2).length;
+      const uVisits14d = unitCreated14d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 3).length;
+      const uProposals30d = unitCreated30d.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 4).length;
+      const uProposalContacts = unitActive.filter((ct: any) => stageOrder[ct.pipeline_stage || "novo"] >= 4 && (ct.max_budget || 0) > 0);
+      const uBestOffer = uProposalContacts.length > 0 ? Math.max(...uProposalContacts.map((ct: any) => Number(ct.max_budget) || 0)) : 0;
       const uGapVsAsk = unit.askPrice > 0 && uBestOffer > 0 ? Math.round(((uBestOffer - unit.askPrice) / unit.askPrice) * 1000) / 10 : 0;
       const uLeadToVisitRate = uTotalLeads14d > 0 ? Math.round((uVisits14d / uTotalLeads14d) * 1000) / 10 : 0;
       const uVisitToProposalRate = uVisits14d > 0 ? Math.round((uProposals30d / uVisits14d) * 1000) / 10 : 0;
 
-      let uStatus = 'SEM_DADOS';
+      let uStatus = "SEM_DADOS";
       if (unitContacts.length > 0 && tgt) {
         let m = 0;
         if (uQualifiedLeads14d >= (tgt.qualifiedLeads14d || 0)) m++;
         if (uVisits14d >= (tgt.visits14d || 0)) m++;
         if (uProposals30d >= (tgt.proposals30d || 0)) m++;
-        if (m === 3) uStatus = 'MANTER';
-        else if (m >= 1) uStatus = 'VIGIAR';
-        else uStatus = 'REDUZIR';
+        if (m === 3) uStatus = "MANTER";
+        else if (m >= 1) uStatus = "VIGIAR";
+        else uStatus = "REDUZIR";
       } else if (unitContacts.length > 0) {
-        uStatus = 'VIGIAR';
+        uStatus = "VIGIAR";
       }
 
       return {
@@ -2422,154 +1671,319 @@ app.get("/make-server-4b2936bc/controlo/auto-kpis", async (c) => {
   }
 });
 
-// ============================================
-// FOLLOW-UP ENDPOINTS
-// ============================================
+// ============================================================================
+// KV → POSTGRESQL MIGRATION ENDPOINT
+// ============================================================================
 
-// GET /contacts/:id/followups — List follow-ups for a contact
-app.get("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
+app.post("/make-server-4b2936bc/migrate-kv-to-pg", async (c) => {
   try {
-    const id = c.req.param("id");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const followups = await kv.getByPrefix(`followup:${normalizedId}:`);
-    const sorted = followups.sort((a: any, b: any) => {
-      const dateA = `${a.dueDate}T${a.dueTime || '23:59'}`;
-      const dateB = `${b.dueDate}T${b.dueTime || '23:59'}`;
-      return dateA.localeCompare(dateB);
+    const sb = supabase();
+    const results: Record<string, { migrated: number; skipped: number; errors: string[] }> = {};
+
+    // ── 1. Migrate projects ──
+    const projectsKv = await kv.getByPrefix("project:");
+    const projectIdMap: Record<string, string> = {};  // old KV id → new UUID
+    results.projects = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const p of projectsKv as any[]) {
+      try {
+        const dbData: Record<string, any> = {
+          title: p.title || "Sem título",
+          description: p.description || null,
+          image_url: p.image || null,
+          category: p.category || null,
+          location: p.location || null,
+          area: p.area || null,
+          status: p.status || "draft",
+          status_label: p.statusLabel || null,
+          year: p.year || null,
+          client: p.client || null,
+          images: p.images || null,
+          features: p.features || null,
+          published: p.published !== undefined ? p.published : true,
+          strategy: p.strategy || null,
+          roi: p.roi || null,
+          price: p.price || null,
+          investment: p.investment || null,
+          bedrooms: p.bedrooms || null,
+          bathrooms: p.bathrooms || null,
+          timeline: p.timeline || null,
+          timeline_phases: p.timelinePhases || null,
+          highlights: p.highlights || null,
+          portal_link: p.portalLink || null,
+          brochure_link: p.brochureLink || null,
+          landing_page: p.landingPage || null,
+          listing_type: "venda",
+          // Auto-generate slug
+          slug: (p.title || "sem-titulo")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, ""),
+        };
+
+        if (p.createdAt) dbData.created_at = p.createdAt;
+        if (p.updatedAt) dbData.updated_at = p.updatedAt;
+
+        const { data, error } = await sb.from("projects").insert(dbData).select("id").single();
+        if (error) {
+          results.projects.errors.push(`${p.id}: ${error.message}`);
+          results.projects.skipped++;
+        } else {
+          projectIdMap[p.id] = data.id;
+          results.projects.migrated++;
+        }
+      } catch (err) {
+        results.projects.errors.push(`${p.id}: ${err}`);
+        results.projects.skipped++;
+      }
+    }
+
+    // ── 2. Migrate contacts ──
+    const contactsKv = await kv.getByPrefix("contact:");
+    results.contacts = { migrated: 0, skipped: 0, errors: [] };
+
+    const contactIdMap: Record<string, string> = {};
+
+    for (const ct of contactsKv as any[]) {
+      try {
+        const dbData: Record<string, any> = {
+          name: ct.name || "Sem nome",
+          email: ct.email || "sem@email.com",
+          phone: ct.phone || null,
+          interest: ct.interest || null,
+          message: ct.message || null,
+          pipeline_stage: ct.pipelineStage || "novo",
+          desired_locations: ct.desiredLocations || null,
+          max_budget: ct.maxBudget || null,
+          typology: ct.typology || null,
+          notes: ct.notes || null,
+          source: ct.origin || ct.source || "website",
+          source_id: ct.projectId || ct.sourceId || null,
+          source_title: ct.sourceTitle || null,
+          source_url: ct.sourceUrl || null,
+          classifications: ct.classifications || null,
+          lead_number: ct.leadNumber || null,
+        };
+
+        // Map project ID to new UUID if available
+        if (ct.projectId && projectIdMap[ct.projectId]) {
+          dbData.property_id = projectIdMap[ct.projectId];
+        }
+
+        if (ct.createdAt) dbData.created_at = ct.createdAt;
+
+        const { data, error } = await sb.from("contacts").insert(dbData).select("id").single();
+        if (error) {
+          results.contacts.errors.push(`${ct.id}: ${error.message}`);
+          results.contacts.skipped++;
+        } else {
+          contactIdMap[ct.id] = data.id;
+          // Also map the normalized ID (without "contact:" prefix)
+          const normalizedId = ct.id.startsWith("contact:") ? ct.id.slice("contact:".length) : ct.id;
+          contactIdMap[normalizedId] = data.id;
+          results.contacts.migrated++;
+        }
+      } catch (err) {
+        results.contacts.errors.push(`${ct.id}: ${err}`);
+        results.contacts.skipped++;
+      }
+    }
+
+    // ── 3. Migrate activities ──
+    results.activities = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const ct of contactsKv as any[]) {
+      const normalizedId = ct.id.startsWith("contact:") ? ct.id.slice("contact:".length) : ct.id;
+      const activitiesKv = await kv.getByPrefix(`activity:${normalizedId}:`);
+
+      for (const act of activitiesKv as any[]) {
+        try {
+          const newContactId = contactIdMap[normalizedId];
+          if (!newContactId) {
+            results.activities.skipped++;
+            continue;
+          }
+
+          const { error } = await sb.from("activities").insert({
+            contact_id: newContactId,
+            type: act.type || act.channel || "note",
+            channel: act.channel || null,
+            description: act.content || null,
+            created_at: act.createdAt || new Date(act.timestamp || Date.now()).toISOString(),
+          });
+
+          if (error) {
+            results.activities.errors.push(`${act.id}: ${error.message}`);
+            results.activities.skipped++;
+          } else {
+            results.activities.migrated++;
+          }
+        } catch (err) {
+          results.activities.errors.push(`${act.id}: ${err}`);
+          results.activities.skipped++;
+        }
+      }
+    }
+
+    // ── 4. Migrate followups ──
+    results.followups = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const ct of contactsKv as any[]) {
+      const normalizedId = ct.id.startsWith("contact:") ? ct.id.slice("contact:".length) : ct.id;
+      const followupsKv = await kv.getByPrefix(`followup:${normalizedId}:`);
+
+      for (const fu of followupsKv as any[]) {
+        try {
+          const newContactId = contactIdMap[normalizedId];
+          if (!newContactId) {
+            results.followups.skipped++;
+            continue;
+          }
+
+          const { error } = await sb.from("followups").insert({
+            contact_id: newContactId,
+            title: fu.title || "Follow-up",
+            type: fu.type || "task",
+            due_date: fu.dueDate,
+            due_time: fu.dueTime || null,
+            priority: fu.priority || "medium",
+            status: fu.status || "pending",
+            outcome: fu.outcome || null,
+            outcome_notes: fu.outcomeNotes || null,
+            notes: fu.notes || null,
+            completed_at: fu.completedAt || null,
+            created_at: fu.createdAt || new Date(fu.timestamp || Date.now()).toISOString(),
+          });
+
+          if (error) {
+            results.followups.errors.push(`${fu.id}: ${error.message}`);
+            results.followups.skipped++;
+          } else {
+            results.followups.migrated++;
+          }
+        } catch (err) {
+          results.followups.errors.push(`${fu.id}: ${err}`);
+          results.followups.skipped++;
+        }
+      }
+    }
+
+    // ── 5. Migrate insights ──
+    const insightsKv = await kv.getByPrefix("insight:");
+    results.insights = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const ins of insightsKv as any[]) {
+      try {
+        const dbData: Record<string, any> = {
+          title: ins.title || "Sem título",
+          summary: ins.description || ins.excerpt || null,
+          category: ins.category || null,
+          image_url: ins.image || null,
+          author: ins.author || "HABTA",
+          published: true,
+        };
+
+        // Store rich content as JSON in content field
+        dbData.content = JSON.stringify({
+          blocks: ins.contentBlocks || [],
+          text: ins.content || "",
+          readTime: ins.readTime,
+          icon: ins.icon,
+          iconColor: ins.iconColor,
+          gradient: ins.gradient,
+          excerpt: ins.excerpt || ins.description,
+          tags: ins.tags || [],
+          authorRole: ins.authorRole,
+          date: ins.date,
+          relatedInsights: ins.relatedInsights || [],
+        });
+
+        if (ins.createdAt) dbData.created_at = ins.createdAt;
+        if (ins.updatedAt) dbData.updated_at = ins.updatedAt;
+
+        const { error } = await sb.from("insights").insert(dbData);
+        if (error) {
+          results.insights.errors.push(`${ins.id}: ${error.message}`);
+          results.insights.skipped++;
+        } else {
+          results.insights.migrated++;
+        }
+      } catch (err) {
+        results.insights.errors.push(`${ins.id}: ${err}`);
+        results.insights.skipped++;
+      }
+    }
+
+    // ── 6. Migrate testimonials ──
+    const testimonialsKv = await kv.getByPrefix("testimonial:");
+    results.testimonials = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const t of testimonialsKv as any[]) {
+      try {
+        const dbData: Record<string, any> = {
+          name: t.name || "Anónimo",
+          role: t.role || null,
+          company: t.company || null,
+          text: t.content || t.text || "",
+          rating: t.rating || 5,
+          image_url: t.image || null,
+          published: true,
+        };
+
+        if (t.createdAt) dbData.created_at = t.createdAt;
+
+        const { error } = await sb.from("testimonials").insert(dbData);
+        if (error) {
+          results.testimonials.errors.push(`${t.id}: ${error.message}`);
+          results.testimonials.skipped++;
+        } else {
+          results.testimonials.migrated++;
+        }
+      } catch (err) {
+        results.testimonials.errors.push(`${t.id}: ${err}`);
+        results.testimonials.skipped++;
+      }
+    }
+
+    // ── 7. Migrate newsletter subscribers ──
+    const subscribersKv = await kv.getByPrefix("newsletter:");
+    results.subscribers = { migrated: 0, skipped: 0, errors: [] };
+
+    for (const s of subscribersKv as any[]) {
+      try {
+        const { error } = await sb.from("newsletter_subscribers").upsert(
+          {
+            email: s.email?.toLowerCase(),
+            subscribed_at: s.subscribedAt || new Date().toISOString(),
+          },
+          { onConflict: "email" }
+        );
+
+        if (error) {
+          results.subscribers.errors.push(`${s.email}: ${error.message}`);
+          results.subscribers.skipped++;
+        } else {
+          results.subscribers.migrated++;
+        }
+      } catch (err) {
+        results.subscribers.errors.push(`${s.email}: ${err}`);
+        results.subscribers.skipped++;
+      }
+    }
+
+    console.log("[Migration] Complete:", JSON.stringify(results, null, 2));
+
+    return c.json({
+      success: true,
+      message: "Migração KV → PostgreSQL concluída!",
+      results,
+      projectIdMap,
     });
-    return c.json({ success: true, followups: sorted, count: sorted.length });
   } catch (error) {
-    console.log(`Error retrieving followups: ${error}`);
-    return c.json({ error: "Erro ao buscar follow-ups" }, 500);
-  }
-});
-
-// POST /contacts/:id/followups — Create follow-up
-app.post("/make-server-4b2936bc/contacts/:id/followups", async (c) => {
-  try {
-    const id = c.req.param("id");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const body = await c.req.json();
-    const { title, type, dueDate, dueTime, priority, notes } = body || {};
-
-    if (!title || !type || !dueDate || !priority) {
-      return c.json({ error: "Título, tipo, data e prioridade são obrigatórios" }, 400);
-    }
-
-    const timestamp = Date.now();
-    const followupId = `${timestamp}`;
-    const key = `followup:${normalizedId}:${followupId}`;
-
-    const data = {
-      id: followupId,
-      contactId: normalizedId,
-      title,
-      type,
-      dueDate,
-      dueTime: dueTime || null,
-      priority,
-      notes: notes || '',
-      status: 'pending',
-      outcome: null,
-      outcomeNotes: null,
-      completedAt: null,
-      // Sequence preparation fields (Phase 2)
-      sequenceEnrollmentId: null,
-      sequenceStepId: null,
-      isAutomated: false,
-      createdAt: new Date().toISOString(),
-      timestamp,
-    };
-
-    await kv.set(key, data);
-    console.log(`Follow-up created for contact ${normalizedId}: ${type} - ${title}`);
-    return c.json({ success: true, followup: data });
-  } catch (error) {
-    console.log(`Error creating followup: ${error}`);
-    return c.json({ error: "Erro ao criar follow-up" }, 500);
-  }
-});
-
-// PUT /contacts/:id/followups/:fid — Update follow-up
-app.put("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
-  try {
-    const id = c.req.param("id");
-    const fid = c.req.param("fid");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const key = `followup:${normalizedId}:${fid}`;
-
-    const existing = await kv.get(key);
-    if (!existing) {
-      return c.json({ error: "Follow-up não encontrado" }, 404);
-    }
-
-    const body = await c.req.json();
-    const { title, type, dueDate, dueTime, priority, notes, status, outcome, outcomeNotes } = body || {};
-
-    const updated = {
-      ...(existing as any),
-      ...(title !== undefined && { title }),
-      ...(type !== undefined && { type }),
-      ...(dueDate !== undefined && { dueDate }),
-      ...(dueTime !== undefined && { dueTime }),
-      ...(priority !== undefined && { priority }),
-      ...(notes !== undefined && { notes }),
-      ...(status !== undefined && { status }),
-      ...(outcome !== undefined && { outcome }),
-      ...(outcomeNotes !== undefined && { outcomeNotes }),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Auto-set completedAt when status becomes completed
-    if (status === 'completed' && !(existing as any).completedAt) {
-      updated.completedAt = new Date().toISOString();
-    }
-
-    await kv.set(key, updated);
-    console.log(`Follow-up updated: ${key} -> status=${updated.status}`);
-    return c.json({ success: true, followup: updated });
-  } catch (error) {
-    console.log(`Error updating followup: ${error}`);
-    return c.json({ error: "Erro ao atualizar follow-up" }, 500);
-  }
-});
-
-// DELETE /contacts/:id/followups/:fid — Delete follow-up
-app.delete("/make-server-4b2936bc/contacts/:id/followups/:fid", async (c) => {
-  try {
-    const id = c.req.param("id");
-    const fid = c.req.param("fid");
-    const normalizedId = id.startsWith("contact:") ? id.slice("contact:".length) : id;
-    const key = `followup:${normalizedId}:${fid}`;
-    await kv.del(key);
-    console.log(`Follow-up deleted: ${key}`);
-    return c.json({ success: true, message: "Follow-up eliminado" });
-  } catch (error) {
-    console.log(`Error deleting followup: ${error}`);
-    return c.json({ error: "Erro ao eliminar follow-up" }, 500);
-  }
-});
-
-// GET /followups/pending — Global: all pending/overdue follow-ups
-app.get("/make-server-4b2936bc/followups/pending", async (c) => {
-  try {
-    const allFollowups = await kv.getByPrefix("followup:");
-    const today = new Date().toISOString().slice(0, 10);
-    const pending = allFollowups
-      .filter((f: any) => f.status === 'pending')
-      .map((f: any) => ({
-        ...f,
-        isOverdue: f.dueDate < today,
-      }))
-      .sort((a: any, b: any) => {
-        const dateA = `${a.dueDate}T${a.dueTime || '23:59'}`;
-        const dateB = `${b.dueDate}T${b.dueTime || '23:59'}`;
-        return dateA.localeCompare(dateB);
-      });
-    return c.json({ success: true, followups: pending, count: pending.length });
-  } catch (error) {
-    console.log(`Error retrieving pending followups: ${error}`);
-    return c.json({ error: "Erro ao buscar follow-ups pendentes" }, 500);
+    console.log(`[Migration] Fatal error: ${error}`);
+    return c.json({ error: "Erro fatal na migração" }, 500);
   }
 });
 

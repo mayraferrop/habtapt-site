@@ -23,7 +23,7 @@ interface PortfolioCardProps {
 }
 
 const getStatusColor = (status: string) => {
-  const colors: Record<ProjectStatus, { bg: string; text: string; border: string }> = {
+  const colors: Record<string, { bg: string; text: string; border: string }> = {
     analysis: {
       bg: designSystem.helpers.hexToRgba(designSystem.colors.brand.tertiary, 0.15),
       text: designSystem.colors.brand.tertiary,
