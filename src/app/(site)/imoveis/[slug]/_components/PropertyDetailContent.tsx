@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, Phone, Mail, Send, User,
   Flame, Sofa, Box, Wind, Sun, Fence, Zap,
   Play, Eye,
-} from 'lucide-react';
+} from '@/components/icons';
 import { toast } from 'sonner';
 import type { Project } from '@/types/project';
 

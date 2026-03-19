@@ -102,6 +102,19 @@ export {
   Tag,
   Award,
   
+  // Property Detail
+  Thermometer,
+  Trees,
+  Waves,
+  Flame,
+  Sofa,
+  Box,
+  Wind,
+  Fence,
+  Zap,
+  Play,
+  SlidersHorizontal,
+
   // Loading
   Loader2,
   

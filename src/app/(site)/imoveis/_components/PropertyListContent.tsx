@@ -8,7 +8,7 @@ import { colors, shadows } from '@/components/design-system';
 import {
   MapPin, BedDouble, Bath, Maximize, Building2,
   Search, SlidersHorizontal, X,
-} from 'lucide-react';
+} from '@/components/icons';
 import type { Project, ListingType } from '@/types/project';
 
 // ── Helpers ──
