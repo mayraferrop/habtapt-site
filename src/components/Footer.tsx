@@ -62,8 +62,8 @@ export function Footer() {
                 <img
                   src="/logo-white.svg"
                   alt="HABTA — Every Home, Productized"
-                  height={48}
-                  style={{ height: 48, width: 'auto' }}
+                  height={80}
+                  style={{ height: 80, width: 'auto' }}
                 />
               </div>
               <p

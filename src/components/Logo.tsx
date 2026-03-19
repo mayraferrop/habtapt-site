@@ -65,9 +65,9 @@ export function LogoFull({ variant = 'white', className = '', showTagline: _show
   const logoSrc = variant === 'white' ? '/logo-dark.svg' : '/logo-white.svg';
 
   const sizes = {
-    sm: { height: 32 },
-    md: { height: 48 },
-    lg: { height: 64 },
+    sm: { height: 48 },
+    md: { height: 64 },
+    lg: { height: 96 },
   };
 
   const config = sizes[size];
