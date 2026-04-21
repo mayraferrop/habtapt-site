@@ -76,31 +76,51 @@ export function Hero() {
               </span>
             </div>
 
-            {/* Title — NO animation delay, visible immediately for LCP */}
+            {/* Title — H1 contains HABTA brand + Portugal keywords for SEO.
+                Visual design keeps VELASK as prominent visual focus. */}
             <h1
               id="hero-title"
               className="text-center w-full"
               style={{
-                fontSize: 'clamp(2.5rem, 7vw, 4.5rem)',
-                lineHeight: 1.1,
-                fontWeight: designSystem.typography.fontWeight.black,
-                letterSpacing: designSystem.typography.letterSpacing.tight,
                 color: designSystem.colors.neutral.white,
                 marginBottom: designSystem.spacing[4],
               }}
             >
               <span
+                className="block"
                 style={{
-                  background: designSystem.colors.gradients.accentReverse,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  display: 'inline-block',
+                  fontSize: 'clamp(0.75rem, 1.4vw, 0.9rem)',
+                  fontWeight: designSystem.typography.fontWeight.semibold,
+                  letterSpacing: designSystem.typography.letterSpacing.widest,
+                  textTransform: 'uppercase',
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  marginBottom: designSystem.spacing[3],
                 }}
               >
-                VELASK
+                HABTA — Investimento e Reabilitação Imobiliária em Portugal
               </span>
-              {' '}Residence
+              <span
+                className="block"
+                style={{
+                  fontSize: 'clamp(2.5rem, 7vw, 4.5rem)',
+                  lineHeight: 1.1,
+                  fontWeight: designSystem.typography.fontWeight.black,
+                  letterSpacing: designSystem.typography.letterSpacing.tight,
+                }}
+              >
+                <span
+                  style={{
+                    background: designSystem.colors.gradients.accentReverse,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    display: 'inline-block',
+                  }}
+                >
+                  VELASK
+                </span>
+                {' '}Residence
+              </span>
             </h1>
 
             {/* Location */}

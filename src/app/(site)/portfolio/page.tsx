@@ -6,6 +6,20 @@ import { fetchProjects } from './_lib/fetchProjects';
 export const metadata: Metadata = {
   title: 'Portfólio de Projetos de Reabilitação Urbana',
   description: 'Projetos de reabilitação urbana concluídos e em curso em Portugal. Apartamentos e moradias reabilitados em Lisboa, Porto e Cascais pela HABTA.',
+  keywords: [
+    'portfólio habta',
+    'projetos reabilitação urbana portugal',
+    'imóveis reabilitados lisboa',
+    'imóveis reabilitados porto',
+    'imóveis reabilitados cascais',
+    'apartamentos reabilitados portugal',
+    'moradias reabilitadas portugal',
+    'projetos imobiliários habta',
+    'empreendimentos reabilitação portugal',
+    'imóveis disponíveis portugal',
+    'casos de sucesso reabilitação',
+    'carteira imóveis portugal',
+  ],
   alternates: {
     canonical: 'https://habta.eu/portfolio',
   },

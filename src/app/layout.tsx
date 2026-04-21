@@ -22,6 +22,28 @@ export const metadata: Metadata = {
   },
   description:
     "Reabilitação urbana, investimento imobiliário e co-investimento em Portugal. Imóveis reabilitados premium em Lisboa, Porto e Cascais. Decisões baseadas em dados para património de alta performance.",
+  keywords: [
+    'HABTA',
+    'habta portugal',
+    'habta imóveis',
+    'habta investimento',
+    'reabilitação urbana portugal',
+    'investimento imobiliário portugal',
+    'imóveis reabilitados portugal',
+    'imóveis premium portugal',
+    'apartamentos reabilitados lisboa',
+    'apartamentos reabilitados porto',
+    'imóveis cascais',
+    'imóveis lisboa',
+    'imóveis porto',
+    'fix and flip portugal',
+    'co-investimento imobiliário',
+    'gestão de património imobiliário',
+    'reabilitação de edifícios portugal',
+    'compra venda imóveis portugal',
+    'imobiliária cascais',
+    'empresa reabilitação portugal',
+  ],
   metadataBase: new URL("https://habta.eu"),
   icons: {
     icon: [

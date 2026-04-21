@@ -5,6 +5,18 @@ import { Section } from '@/components/Section';
 export const metadata: Metadata = {
   title: 'Contacto — Fale com a Equipa HABTA',
   description: 'Entre em contacto com a HABTA para discutir o seu projeto imobiliário. Consultoria gratuita sobre investimento imobiliário e reabilitação urbana em Portugal. Cascais, Lisboa e Porto.',
+  keywords: [
+    'contacto habta',
+    'fale com habta',
+    'consultoria imobiliária gratuita',
+    'habta telefone',
+    'habta email',
+    'habta cascais morada',
+    'reunião consultoria imobiliária portugal',
+    'agendar reunião habta',
+    'falar com especialista imobiliário portugal',
+    'habta contactos',
+  ],
   alternates: {
     canonical: 'https://habta.eu/contacto',
   },

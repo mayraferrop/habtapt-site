@@ -5,6 +5,17 @@ const SUPABASE_URL = 'https://xrgcrvhmzoxfduhytzhk.supabase.co';
 const FUNCTION_PATH = 'functions/v1/make-server-4b2936bc';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyZ2Nydmhtem94ZmR1aHl0emhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxNzQ5MDEsImV4cCI6MjA3Nzc1MDkwMX0.kuOHXFvX3s5yTDmxA4KBw_r6NDZxmsQtZRm_WDkdGUE';
 
+// Google requires ISO 8601 for <lastmod>. Upstream data may be a locale string
+// like "5 Fev 2024" which Date() can't parse — fall back to now if invalid.
+function toISOString(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return new Date().toISOString();
+}
+
 async function fetchDynamicPages() {
   const dynamicPages: MetadataRoute.Sitemap = [];
 
@@ -19,7 +30,7 @@ async function fetchDynamicPages() {
         for (const insight of insightsData.insights) {
           dynamicPages.push({
             url: `${BASE_URL}/blog/${insight.id}`,
-            lastModified: insight.updated_at || insight.date || new Date().toISOString(),
+            lastModified: toISOString(insight.updated_at || insight.date),
             changeFrequency: 'monthly',
             priority: 0.7,
           });
@@ -42,7 +53,7 @@ async function fetchDynamicPages() {
         for (const project of projects) {
           dynamicPages.push({
             url: `${BASE_URL}/portfolio/${project.id}`,
-            lastModified: project.updated_at || new Date().toISOString(),
+            lastModified: toISOString(project.updated_at),
             changeFrequency: 'monthly',
             priority: 0.7,
           });

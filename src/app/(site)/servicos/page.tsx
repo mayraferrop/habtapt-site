@@ -4,6 +4,22 @@ import ServicosContent from './_components/ServicosContent';
 export const metadata: Metadata = {
   title: 'Serviços de Reabilitação Urbana e Investimento Imobiliário',
   description: 'Serviços de compra estratégica, reforma inteligente e venda otimizada de imóveis em Portugal. Reabilitação urbana completa com gestão de obra, due diligence e marketing imobiliário.',
+  keywords: [
+    'serviços reabilitação portugal',
+    'consultoria imobiliária portugal',
+    'gestão de obra portugal',
+    'due diligence imobiliária',
+    'compra estratégica imóveis',
+    'reforma inteligente imóveis',
+    'venda otimizada imóveis',
+    'marketing imobiliário premium',
+    'análise de mercado imobiliário',
+    'home staging portugal',
+    'habta serviços',
+    'empresa reabilitação urbana',
+    'consultoria investimento imobiliário',
+    'projetos arquitetura reabilitação',
+  ],
   alternates: {
     canonical: 'https://habta.eu/servicos',
   },

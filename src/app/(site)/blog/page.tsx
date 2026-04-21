@@ -6,6 +6,20 @@ import { fetchInsights } from './_lib/fetchInsights';
 export const metadata: Metadata = {
   title: 'Insights — Artigos sobre Investimento Imobiliário e Reabilitação',
   description: 'Artigos especializados sobre investimento imobiliário, reabilitação urbana, regulamentação e mercado imobiliário em Portugal. Dicas e análises para investidores.',
+  keywords: [
+    'blog imobiliário portugal',
+    'insights habta',
+    'artigos investimento imobiliário',
+    'mercado imobiliário portugal',
+    'reabilitação urbana dicas',
+    'análise mercado imobiliário lisboa',
+    'análise mercado imobiliário porto',
+    'regulamentação imobiliária portugal',
+    'rentabilidade imóveis portugal',
+    'guia investidor imobiliário',
+    'tendências imobiliárias portugal',
+    'notícias imobiliário portugal',
+  ],
   alternates: {
     canonical: 'https://habta.eu/blog',
   },
