@@ -5,6 +5,7 @@ export interface InsightFull extends Insight {
   excerpt?: string;
   image?: string;
   author?: string;
+  authorRole?: string;
   date?: string;
   updated_at?: string;
   tags?: string[];

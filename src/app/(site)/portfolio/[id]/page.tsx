@@ -96,6 +96,7 @@ function generateRealEstateJsonLd(project: any, id: string) {
         '@type': 'Offer',
         price: project.price.replace(/[^\d]/g, ''),
         priceCurrency: 'EUR',
+        availability: project.status === 'available' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
       },
     } : {}),
     ...(project.area ? {
@@ -105,6 +106,11 @@ function generateRealEstateJsonLd(project: any, id: string) {
         unitCode: 'MTK',
       },
     } : {}),
+    ...(project.bedrooms ? { numberOfRooms: project.bedrooms } : {}),
+    ...(project.bathrooms ? { numberOfBathroomsTotal: project.bathrooms } : {}),
+    ...(project.constructionYear ? { yearBuilt: project.constructionYear } : {}),
+    ...(project.energyCertificate ? { energyEfficiencyRating: project.energyCertificate } : {}),
+    ...(project.propertyType ? { accommodationCategory: project.propertyType } : {}),
     provider: {
       '@id': 'https://habta.eu/#organization',
     },

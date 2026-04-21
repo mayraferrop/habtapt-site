@@ -45,11 +45,32 @@ const breadcrumbJsonLd = {
 export default async function BlogPage() {
   const insights = await fetchInsights();
 
+  const blogJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    '@id': 'https://habta.eu/blog',
+    url: 'https://habta.eu/blog',
+    name: 'HABTA Insights',
+    description:
+      'Artigos especializados sobre investimento imobiliário, reabilitação urbana, regulamentação e mercado imobiliário em Portugal.',
+    inLanguage: 'pt-PT',
+    isPartOf: { '@id': 'https://habta.eu/#website' },
+    publisher: { '@id': 'https://habta.eu/#organization' },
+    blogPost: insights.slice(0, 20).map((insight) => ({
+      '@type': 'BlogPosting',
+      '@id': `https://habta.eu/blog/${insight.id}`,
+      url: `https://habta.eu/blog/${insight.id}`,
+      headline: insight.title,
+      ...(insight.description ? { description: insight.description } : {}),
+      ...(insight.category ? { articleSection: insight.category } : {}),
+    })),
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbJsonLd, blogJsonLd]) }}
       />
       <Section background="white" style={{ paddingTop: '7.5rem' }}>
         <Insights insights={insights.length > 0 ? insights : undefined} />

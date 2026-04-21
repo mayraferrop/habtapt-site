@@ -51,6 +51,8 @@ export async function generateMetadata(
 
 function generateArticleJsonLd(insight: InsightFull | null, id: string) {
   if (!insight) return null;
+  const authorName = insight.author || 'HABTA';
+  const isOrgAuthor = authorName === 'HABTA';
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -59,11 +61,14 @@ function generateArticleJsonLd(insight: InsightFull | null, id: string) {
     ...(insight.image ? { image: insight.image } : {}),
     ...(insight.date ? { datePublished: insight.date } : {}),
     ...(insight.updated_at ? { dateModified: insight.updated_at } : {}),
-    author: {
-      '@type': 'Organization',
-      name: 'HABTA',
-      url: 'https://habta.eu',
-    },
+    author: isOrgAuthor
+      ? { '@type': 'Organization', name: 'HABTA', url: 'https://habta.eu' }
+      : {
+          '@type': 'Person',
+          name: authorName,
+          ...(insight.authorRole ? { jobTitle: insight.authorRole } : {}),
+          worksFor: { '@id': 'https://habta.eu/#organization' },
+        },
     publisher: {
       '@id': 'https://habta.eu/#organization',
     },
@@ -72,6 +77,10 @@ function generateArticleJsonLd(insight: InsightFull | null, id: string) {
       '@id': `https://habta.eu/blog/${id}`,
     },
     inLanguage: 'pt-PT',
+    ...(insight.category ? { articleSection: insight.category } : {}),
+    ...(Array.isArray(insight.tags) && insight.tags.length > 0
+      ? { keywords: insight.tags.join(', ') }
+      : {}),
   };
 }
 
