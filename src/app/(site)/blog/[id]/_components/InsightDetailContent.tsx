@@ -17,8 +17,22 @@ import { InsightDetailSkeleton } from '@/components/primitives/InsightDetailSkel
 import { NewsletterModal } from '@/components/NewsletterModal';
 
 interface ContentBlock {
-  type: 'heading2' | 'heading3' | 'paragraph' | 'list' | 'callout';
-  content: string | string[];
+  type: 'heading2' | 'heading3' | 'paragraph' | 'list' | 'callout' | 'quote' | 'table';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content: any;
+  source?: { name: string; role?: string; url?: string };
+}
+
+interface TrustSignals {
+  projectsReviewed?: number;
+  yearsExperience?: number;
+  geoScope?: string;
+  lastReviewed?: string;
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
 }
 
 interface Insight {
@@ -38,6 +52,10 @@ interface Insight {
   tags: string[];
   content?: string | ContentBlock[];
   contentBlocks?: ContentBlock[];
+  tldr?: string[];
+  trustSignals?: TrustSignals;
+  faq?: FaqItem[];
+  disclaimer?: string;
   relatedInsights?: string[];
 }
 
@@ -256,6 +274,50 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
               <p style={{ fontSize: '1.0625rem', color: designSystem.colors.brand.primary, fontWeight: designSystem.typography.fontWeight.medium, margin: 0, fontStyle: 'italic' }}>{block.content as string}</p>
             </div>
           );
+        case 'quote':
+          return (
+            <figure key={index} style={{ margin: `0 0 ${designSystem.spacing[8]} 0`, padding: `${designSystem.spacing[6]} ${designSystem.spacing[8]}`, borderLeft: `4px solid ${category.color}`, background: `${category.color}05`, borderRadius: designSystem.borderRadius.lg }}>
+              <blockquote style={{ margin: 0, padding: 0 }}>
+                <p style={{ fontSize: '1.125rem', lineHeight: '1.7', color: designSystem.colors.neutral[800], fontStyle: 'italic', marginBottom: designSystem.spacing[3] }}>
+                  &ldquo;{block.content as string}&rdquo;
+                </p>
+              </blockquote>
+              {block.source && (
+                <figcaption style={{ fontSize: '0.9375rem', color: designSystem.colors.neutral[600], fontWeight: designSystem.typography.fontWeight.semibold }}>
+                  — {block.source.url ? (
+                    <a href={block.source.url} target="_blank" rel="noopener noreferrer" style={{ color: category.color, textDecoration: 'none' }}>{block.source.name}</a>
+                  ) : block.source.name}
+                  {block.source.role ? `, ${block.source.role}` : ''}
+                </figcaption>
+              )}
+            </figure>
+          );
+        case 'table': {
+          const tableData = block.content as { headers: string[]; rows: string[][] };
+          if (!tableData || !Array.isArray(tableData.headers) || !Array.isArray(tableData.rows)) return null;
+          return (
+            <div key={index} style={{ marginBottom: designSystem.spacing[8], overflowX: 'auto', border: `1px solid ${designSystem.colors.neutral[200]}`, borderRadius: designSystem.borderRadius.lg }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9375rem' }}>
+                <thead>
+                  <tr style={{ background: `${category.color}10` }}>
+                    {tableData.headers.map((h, i) => (
+                      <th key={i} style={{ padding: designSystem.spacing[3], textAlign: 'left', color: designSystem.colors.brand.primary, fontWeight: designSystem.typography.fontWeight.bold, borderBottom: `2px solid ${category.color}30` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.rows.map((row, ri) => (
+                    <tr key={ri} style={{ borderBottom: `1px solid ${designSystem.colors.neutral[200]}` }}>
+                      {row.map((cell, ci) => (
+                        <td key={ci} style={{ padding: designSystem.spacing[3], color: designSystem.colors.neutral[700], verticalAlign: 'top' }}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
         default:
           return null;
       }
@@ -348,9 +410,132 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
               )}
             </motion.div>
 
+            {insight.trustSignals && (
+              <motion.aside
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.27 }}
+                aria-label="Por que confiar neste artigo"
+                style={{
+                  marginBottom: designSystem.spacing[8],
+                  padding: designSystem.spacing[6],
+                  background: designSystem.colors.neutral[50],
+                  border: `1px solid ${designSystem.colors.neutral[200]}`,
+                  borderLeft: `4px solid ${category.color}`,
+                  borderRadius: designSystem.borderRadius.lg,
+                }}
+              >
+                <p style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: category.color, fontWeight: designSystem.typography.fontWeight.bold, marginBottom: designSystem.spacing[3] }}>
+                  Por que confiar neste artigo
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: designSystem.spacing[2] }}>
+                  {insight.trustSignals.yearsExperience ? (
+                    <li style={{ fontSize: '0.9375rem', color: designSystem.colors.neutral[700] }}>
+                      <strong style={{ color: designSystem.colors.brand.primary }}>Experiência:</strong> {insight.trustSignals.yearsExperience}+ anos em reabilitação urbana em Portugal
+                    </li>
+                  ) : null}
+                  {insight.trustSignals.projectsReviewed ? (
+                    <li style={{ fontSize: '0.9375rem', color: designSystem.colors.neutral[700] }}>
+                      <strong style={{ color: designSystem.colors.brand.primary }}>Projetos analisados:</strong> {insight.trustSignals.projectsReviewed}+ casos
+                    </li>
+                  ) : null}
+                  {insight.trustSignals.geoScope ? (
+                    <li style={{ fontSize: '0.9375rem', color: designSystem.colors.neutral[700] }}>
+                      <strong style={{ color: designSystem.colors.brand.primary }}>Âmbito:</strong> {insight.trustSignals.geoScope}
+                    </li>
+                  ) : null}
+                  {insight.trustSignals.lastReviewed ? (
+                    <li style={{ fontSize: '0.9375rem', color: designSystem.colors.neutral[700] }}>
+                      <strong style={{ color: designSystem.colors.brand.primary }}>Última revisão:</strong> {insight.trustSignals.lastReviewed}
+                    </li>
+                  ) : null}
+                </ul>
+              </motion.aside>
+            )}
+
+            {insight.tldr && insight.tldr.length > 0 && (
+              <motion.aside
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.29 }}
+                aria-label="Em resumo"
+                style={{
+                  marginBottom: designSystem.spacing[10],
+                  padding: designSystem.spacing[6],
+                  background: `${category.color}0A`,
+                  borderRadius: designSystem.borderRadius['2xl'],
+                }}
+              >
+                <p style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: category.color, fontWeight: designSystem.typography.fontWeight.bold, marginBottom: designSystem.spacing[3] }}>
+                  Em resumo
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: designSystem.spacing[2] }}>
+                  {insight.tldr.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <CheckCircle size={18} style={{ color: category.color, flexShrink: 0, marginTop: '0.2rem' }} />
+                      <span style={{ fontSize: '1rem', color: designSystem.colors.neutral[800], lineHeight: '1.6' }}>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.aside>
+            )}
+
             <motion.article initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
               {renderContent()}
             </motion.article>
+
+            {insight.faq && insight.faq.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.35 }}
+                aria-label="Perguntas frequentes"
+                style={{ marginTop: designSystem.spacing[12] }}
+              >
+                <h2 style={{ fontSize: '1.875rem', fontWeight: designSystem.typography.fontWeight.black, color: designSystem.colors.brand.primary, marginBottom: designSystem.spacing[6] }}>
+                  Perguntas frequentes
+                </h2>
+                <div style={{ display: 'grid', gap: designSystem.spacing[4] }}>
+                  {insight.faq.map((item, i) => (
+                    <details
+                      key={i}
+                      style={{
+                        padding: `${designSystem.spacing[4]} ${designSystem.spacing[5]}`,
+                        background: designSystem.colors.neutral[50],
+                        border: `1px solid ${designSystem.colors.neutral[200]}`,
+                        borderRadius: designSystem.borderRadius.lg,
+                      }}
+                    >
+                      <summary style={{ cursor: 'pointer', fontWeight: designSystem.typography.fontWeight.bold, color: designSystem.colors.brand.primary, fontSize: '1.0625rem', listStyle: 'none' }}>
+                        {item.q}
+                      </summary>
+                      <p style={{ marginTop: designSystem.spacing[3], marginBottom: 0, fontSize: '1rem', lineHeight: '1.7', color: designSystem.colors.neutral[700] }}>
+                        {item.a}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </motion.section>
+            )}
+
+            {insight.disclaimer && (
+              <motion.aside
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                style={{
+                  marginTop: designSystem.spacing[10],
+                  padding: designSystem.spacing[5],
+                  background: designSystem.colors.neutral[50],
+                  border: `1px dashed ${designSystem.colors.neutral[300]}`,
+                  borderRadius: designSystem.borderRadius.lg,
+                }}
+              >
+                <p style={{ fontSize: '0.875rem', color: designSystem.colors.neutral[600], lineHeight: '1.6', margin: 0, fontStyle: 'italic' }}>
+                  <strong style={{ color: designSystem.colors.neutral[700] }}>Aviso:</strong> {insight.disclaimer}
+                </p>
+              </motion.aside>
+            )}
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} style={{ marginTop: designSystem.spacing[12], padding: designSystem.spacing[8], background: designSystem.colors.neutral[50], borderRadius: designSystem.borderRadius['2xl'], textAlign: 'center' }}>
               <h3 style={{ color: designSystem.colors.brand.primary, marginBottom: designSystem.spacing[4] }}>Gostou deste artigo?</h3>

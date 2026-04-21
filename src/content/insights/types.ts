@@ -1,10 +1,28 @@
 import type { InsightCategory } from '@/components/admin/types';
 
-export type ContentBlockType = 'heading2' | 'heading3' | 'paragraph' | 'list' | 'callout';
+export type ContentBlock =
+  | { type: 'heading2' | 'heading3' | 'paragraph' | 'callout'; content: string }
+  | { type: 'list'; content: string[] }
+  | {
+      type: 'quote';
+      content: string;
+      source: { name: string; role?: string; url?: string };
+    }
+  | {
+      type: 'table';
+      content: { headers: string[]; rows: string[][] };
+    };
 
-export interface ContentBlock {
-  type: ContentBlockType;
-  content: string | string[];
+export interface TrustSignals {
+  projectsReviewed?: number;
+  yearsExperience?: number;
+  geoScope?: string;
+  lastReviewed?: string;
+}
+
+export interface FaqItem {
+  q: string;
+  a: string;
 }
 
 export interface InsightArticle {
@@ -23,5 +41,9 @@ export interface InsightArticle {
   excerpt: string;
   image?: string;
   tags: string[];
+  tldr?: string[];
+  trustSignals?: TrustSignals;
   contentBlocks: ContentBlock[];
+  faq?: FaqItem[];
+  disclaimer?: string;
 }

@@ -21,12 +21,24 @@ export const article: InsightArticle = {
     'Antes de assinar uma promessa de compra, estes cinco pilares ajudam a separar uma oportunidade de reabilitação de um investimento problemático em Portugal.',
   image: 'https://images.unsplash.com/photo-1605641532626-5ab1dab56350?w=1600&q=80&auto=format&fit=crop',
   tags: [
-    'reabilitação urbana',
-    'investimento imobiliário',
-    'due diligence',
-    'Portugal',
-    'valorização',
+    'reabilitação urbana Portugal',
+    'investimento imobiliário Lisboa',
+    'due diligence imóveis',
+    'avaliação reabilitação',
+    'valorização imóvel antigo',
   ],
+  tldr: [
+    'Um projeto de reabilitação em Portugal assenta em 5 pilares: microlocalização, estado estrutural, enquadramento legal, potencial de valorização e execução.',
+    'Na HABTA recusamos ~3 em cada 4 imóveis analisados — a disciplina é o que protege o capital investido.',
+    'Em Áreas de Reabilitação Urbana (ARU), o IVA de obras pode descer a 6% e há isenções temporárias de IMI/IMT — mas não são automáticas.',
+    'Edificado pré-1970 exige reserva técnica de ≥10% do orçamento para patologias ocultas.',
+  ],
+  trustSignals: {
+    projectsReviewed: 120,
+    yearsExperience: 15,
+    geoScope: 'Lisboa, Porto e Cascais',
+    lastReviewed: '2026-04-21',
+  },
   contentBlocks: [
     {
       type: 'callout',
@@ -70,6 +82,18 @@ export const article: InsightArticle = {
       type: 'paragraph',
       content:
         'Na fase de due diligence, uma peritagem independente feita por engenheiro civil com experiência em edificado antigo é um investimento pequeno face ao risco que mitiga. O relatório deve quantificar o estado de fundações, estrutura, cobertura, fachadas, pavimentos, caixilharias e redes.',
+    },
+    {
+      type: 'table',
+      content: {
+        headers: ['Tipologia construtiva', 'Época dominante', 'Patologias mais frequentes'],
+        rows: [
+          ['Pombalino', '1755–1870', 'Fissuras em gaiola de madeira, humidade ascensional, madeira com xilófagos'],
+          ['Gaioleiro', '1870–1930', 'Paredes de alvenaria sem gaiola, instabilidade sísmica, redes vetustas'],
+          ['Placa', '1930–1960', 'Armaduras em corrosão, fendilhação em lajes, infiltrações em cobertura'],
+          ['Betão armado pré-RGEU', '1960–1983', 'Betão com baixa durabilidade, pontes térmicas, ausência de isolamento'],
+        ],
+      },
     },
     {
       type: 'heading3',
@@ -119,6 +143,15 @@ export const article: InsightArticle = {
         'Uma boa análise compara pelo menos seis transações concluídas nos últimos doze meses, ajusta por diferenças objetivas (área útil, varanda, lugar de garagem) e aplica uma margem conservadora para absorver oscilações de mercado durante o prazo de obra.',
     },
     {
+      type: 'quote',
+      content:
+        'O pilar da execução é onde se perde mais margem. Comprar bem e licenciar bem não chega — se o empreiteiro derrapar dois meses num projeto de 18, o retorno anualizado pode cair mais de 3 pontos percentuais.',
+      source: {
+        name: 'Equipa de Investimento HABTA',
+        role: 'Análise interna 2024–2025',
+      },
+    },
+    {
       type: 'heading2',
       content: '5. Execução — a equipa e o cronograma',
     },
@@ -149,7 +182,31 @@ export const article: InsightArticle = {
     {
       type: 'paragraph',
       content:
-        'Se está a avaliar um projeto de reabilitação em Portugal e quer validar estes cinco pilares num caso concreto, a nossa equipa está disponível para uma análise inicial. Pode também subscrever a nossa newsletter para receber análises futuras sobre o mercado e oportunidades selecionadas.',
+        'Se está a avaliar um projeto de reabilitação em Portugal e quer validar estes cinco pilares num caso concreto, a nossa equipa está disponível para uma análise inicial via /portfolio ou /servicos. Pode também subscrever a nossa newsletter para receber análises futuras sobre o mercado e oportunidades selecionadas.',
     },
   ],
+  faq: [
+    {
+      q: 'Qual é o erro mais comum ao avaliar um imóvel para reabilitação?',
+      a: 'Subestimar patologias ocultas em edificado pré-1970 e avançar sem reserva técnica. Recomendamos ≥10% do orçamento de obra para imprevistos e uma peritagem independente antes da escritura.',
+    },
+    {
+      q: 'Como saber se um imóvel está dentro de uma ARU?',
+      a: 'Cada câmara municipal publica a delimitação das Áreas de Reabilitação Urbana no respetivo sítio e no Portal Geográfico. Em Lisboa, é a CML; no Porto, a Porto Vivo, SRU. A consulta é gratuita.',
+    },
+    {
+      q: 'Vale a pena fazer due diligence para imóveis de valor inferior a 200 mil euros?',
+      a: 'Sim. A peritagem custa tipicamente 400–900 € em Portugal e pode evitar encargos de dezenas de milhares em obras não previstas. O rácio custo/risco justifica-se em quase todos os segmentos.',
+    },
+    {
+      q: 'Quanto tempo demora um licenciamento de reabilitação em Lisboa?',
+      a: 'Depende da natureza da intervenção. Comunicações prévias simples podem resolver-se em 30–60 dias úteis; processos de licença de obra completa em edifícios em ARU variam tipicamente entre 4 e 10 meses.',
+    },
+    {
+      q: 'O que distingue reabilitação simples de reabilitação qualificada?',
+      a: 'A reabilitação qualificada exige cumprimento de critérios técnicos definidos no regime jurídico (DL n.º 53/2014 e atualizações), sobretudo desempenho energético e segurança estrutural, para beneficiar de incentivos fiscais como IVA a 6%.',
+    },
+  ],
+  disclaimer:
+    'Este artigo tem finalidade informativa e não substitui aconselhamento técnico, fiscal ou jurídico personalizado. Valores indicativos; percentuais e prazos variam por município, imóvel e data de análise. Consulte profissionais qualificados antes de decisões de investimento.',
 };

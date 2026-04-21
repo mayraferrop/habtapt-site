@@ -1,6 +1,6 @@
 import type { Insight } from '@/components/admin/types';
 import { getAllInsights, getInsightById, getRelatedInsights } from '@/content/insights/_all';
-import type { InsightArticle, ContentBlock } from '@/content/insights/types';
+import type { InsightArticle, ContentBlock, TrustSignals, FaqItem } from '@/content/insights/types';
 
 export interface InsightFull extends Insight {
   excerpt?: string;
@@ -11,6 +11,10 @@ export interface InsightFull extends Insight {
   updated_at?: string;
   tags?: string[];
   contentBlocks?: ContentBlock[];
+  tldr?: string[];
+  trustSignals?: TrustSignals;
+  faq?: FaqItem[];
+  disclaimer?: string;
 }
 
 function toInsightFull(article: InsightArticle): InsightFull {
@@ -31,6 +35,10 @@ function toInsightFull(article: InsightArticle): InsightFull {
     image: article.image,
     tags: article.tags,
     contentBlocks: article.contentBlocks,
+    tldr: article.tldr,
+    trustSignals: article.trustSignals,
+    faq: article.faq,
+    disclaimer: article.disclaimer,
   };
 }
 

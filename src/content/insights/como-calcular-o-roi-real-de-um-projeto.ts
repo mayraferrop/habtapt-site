@@ -21,12 +21,24 @@ export const article: InsightArticle = {
     'Calcular o ROI de uma reabilitação em Lisboa exige muito mais do que subtrair o custo de compra ao valor de venda — este guia mostra como apurar o retorno real.',
   image: 'https://images.unsplash.com/photo-1541323035148-3b6d6b990e1e?w=1600&q=80&auto=format&fit=crop',
   tags: [
-    'ROI imobiliário',
-    'reabilitação urbana',
-    'investimento em Lisboa',
-    'análise financeira',
-    'retorno sobre investimento',
+    'ROI reabilitação Lisboa',
+    'rentabilidade imóvel reabilitado',
+    'TIR reabilitação urbana',
+    'análise financeira imobiliário',
+    'investimento premium Portugal',
   ],
+  tldr: [
+    'O ROI real de uma reabilitação soma custos de aquisição + obra + licenciamento + fiscais e subtrai-se ao valor de saída com IRS/IRC e custos de absorção.',
+    'A TIR (retorno anualizado) é a métrica mais honesta — 20% num projeto de 18 meses é muito diferente dos mesmos 20% em 36 meses.',
+    'IVA a 6%, isenções temporárias de IMI e redução de IMT em ARU podem mover 3–7 pontos percentuais no ROI — mas exigem confirmação prévia.',
+    'Uma análise robusta produz um intervalo (cenário base, conservador e stress) — não um número único.',
+  ],
+  trustSignals: {
+    projectsReviewed: 120,
+    yearsExperience: 15,
+    geoScope: 'Lisboa, Porto e Cascais',
+    lastReviewed: '2026-04-21',
+  },
   contentBlocks: [
     {
       type: 'callout',
@@ -130,6 +142,18 @@ export const article: InsightArticle = {
       ],
     },
     {
+      type: 'table',
+      content: {
+        headers: ['Componente', 'Cenário base', 'Cenário conservador', 'Cenário de stress'],
+        rows: [
+          ['Desvio sobre custo de obra', '+5%', '+12%', '+20%'],
+          ['Atraso no cronograma', '+1 mês', '+3 meses', '+6 meses'],
+          ['Desconto sobre valor de saída', '-3%', '-7%', '-12%'],
+          ['Tempo médio de absorção', '3 meses', '6 meses', '9+ meses'],
+        ],
+      },
+    },
+    {
       type: 'heading2',
       content: 'Benefícios fiscais que podem melhorar o retorno',
     },
@@ -153,9 +177,42 @@ export const article: InsightArticle = {
         'Uma análise de ROI robusta não produz um número — produz um intervalo. O cenário base, o cenário conservador e o cenário de stress permitem perceber qual é a margem de segurança do projecto e em que condições o investimento deixa de fazer sentido. Essa análise de sensibilidade é o que transforma uma projecção em suporte real de decisão.',
     },
     {
+      type: 'quote',
+      content:
+        'O ROI médio real que observamos em reabilitação qualificada em Lisboa fica tipicamente 2–4 pontos percentuais abaixo do que aparece em projeções não auditadas. A diferença está em rubricas quase sempre esquecidas: fiscalização, certificação e absorção.',
+      source: {
+        name: 'Equipa de Investimento HABTA',
+        role: 'Síntese de 120+ análises de viabilidade (2020–2025)',
+      },
+    },
+    {
       type: 'callout',
       content:
-        'Na HABTA, nenhum projecto é apresentado a parceiros de investimento sem uma análise financeira com três cenários, cronograma detalhado e mapa de riscos. Acreditamos que a transparência metodológica é a base de qualquer relação de confiança com quem nos confia capital — e que um ROI bem calculado é sempre melhor do que um ROI optimista que não se concretiza.',
+        'Na HABTA, nenhum projecto é apresentado a parceiros de investimento sem uma análise financeira com três cenários, cronograma detalhado e mapa de riscos. Acreditamos que a transparência metodológica é a base de qualquer relação de confiança com quem nos confia capital — e que um ROI bem calculado é sempre melhor do que um ROI optimista que não se concretiza. Uma primeira análise de viabilidade pode ser pedida via /servicos.',
     },
   ],
+  faq: [
+    {
+      q: 'Qual a diferença entre ROI simples e TIR (taxa interna de rentabilidade)?',
+      a: 'O ROI simples é a razão entre lucro e capital investido, sem peso temporal. A TIR anualiza esse retorno e permite comparar projetos com horizontes diferentes. Em reabilitação urbana, a TIR é a métrica mais honesta.',
+    },
+    {
+      q: 'Quais os impostos a considerar no cálculo do ROI de uma reabilitação em Portugal?',
+      a: 'IMT e Imposto de Selo na aquisição, IVA nas obras (6% ou 23% consoante o regime), IMI durante a posse, IRS (mais-valias) ou IRC na saída consoante o veículo, e Imposto de Selo sobre a escritura de venda.',
+    },
+    {
+      q: 'É possível estimar o ROI antes da due diligence técnica?',
+      a: 'Apenas com um intervalo largo. A peritagem pode alterar substancialmente a rubrica de obra e, por consequência, o ROI. Estimativas pré-peritagem devem ser tratadas como triagem, não como decisão.',
+    },
+    {
+      q: 'Que reserva técnica é razoável para imprevistos de obra em Lisboa?',
+      a: 'Em edificado pré-1970, ≥10% do orçamento de obra. Em pombalino ou gaioleiro em estado avançado de degradação, pode justificar-se 15–20%.',
+    },
+    {
+      q: 'Como confirmar se um imóvel beneficia de IVA reduzido em obras?',
+      a: 'A aplicação do IVA a 6% exige que a intervenção seja qualificada como reabilitação e que o imóvel esteja em ARU com os critérios cumpridos. A confirmação faz-se junto da câmara municipal e de um contabilista ou advogado fiscal.',
+    },
+  ],
+  disclaimer:
+    'Este artigo é informativo e não constitui aconselhamento fiscal, jurídico ou de investimento. Os percentuais e cenários apresentados são ilustrativos. Consulte profissionais qualificados antes de decisões concretas sobre imóveis ou estruturas de investimento.',
 };

@@ -96,6 +96,19 @@ function generateBreadcrumbJsonLd(insight: InsightFull | null, id: string) {
   };
 }
 
+function generateFaqJsonLd(insight: InsightFull | null) {
+  if (!insight?.faq || insight.faq.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: insight.faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+}
+
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const insight = await fetchInsightById(id);
@@ -103,7 +116,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const articleJsonLd = generateArticleJsonLd(insight, id);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(insight, id);
-  const jsonLd = articleJsonLd ? [breadcrumbJsonLd, articleJsonLd] : [breadcrumbJsonLd];
+  const faqJsonLd = generateFaqJsonLd(insight);
+  const jsonLd = [breadcrumbJsonLd, articleJsonLd, faqJsonLd].filter(Boolean);
 
   return (
     <>
