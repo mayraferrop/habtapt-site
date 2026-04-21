@@ -1,12 +1,11 @@
 import type { MetadataRoute } from 'next';
+import { getAllInsights } from '@/content/insights/_all';
 
 const BASE_URL = 'https://habta.eu';
 const SUPABASE_URL = 'https://xrgcrvhmzoxfduhytzhk.supabase.co';
 const FUNCTION_PATH = 'functions/v1/make-server-4b2936bc';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyZ2Nydmhtem94ZmR1aHl0emhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxNzQ5MDEsImV4cCI6MjA3Nzc1MDkwMX0.kuOHXFvX3s5yTDmxA4KBw_r6NDZxmsQtZRm_WDkdGUE';
 
-// Google requires ISO 8601 for <lastmod>. Upstream data may be a locale string
-// like "5 Fev 2024" which Date() can't parse — fall back to now if invalid.
 function toISOString(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'string' && value.trim()) {
@@ -19,26 +18,13 @@ function toISOString(value: unknown): string {
 async function fetchDynamicPages() {
   const dynamicPages: MetadataRoute.Sitemap = [];
 
-  try {
-    const insightsRes = await fetch(`${SUPABASE_URL}/${FUNCTION_PATH}/insights`, {
-      headers: { 'Authorization': `Bearer ${ANON_KEY}` },
-      next: { revalidate: 3600 },
+  for (const insight of getAllInsights()) {
+    dynamicPages.push({
+      url: `${BASE_URL}/blog/${insight.id}`,
+      lastModified: toISOString(insight.updated_at || insight.date),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     });
-    if (insightsRes.ok) {
-      const insightsData = await insightsRes.json();
-      if (insightsData.success && insightsData.insights) {
-        for (const insight of insightsData.insights) {
-          dynamicPages.push({
-            url: `${BASE_URL}/blog/${insight.id}`,
-            lastModified: toISOString(insight.updated_at || insight.date),
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          });
-        }
-      }
-    }
-  } catch {
-    // Silently fail - dynamic pages are optional for sitemap
   }
 
   try {
