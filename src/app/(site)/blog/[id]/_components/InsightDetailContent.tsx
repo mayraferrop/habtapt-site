@@ -319,7 +319,33 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.25 }} style={{ marginBottom: designSystem.spacing[12], borderRadius: designSystem.borderRadius['2xl'], overflow: 'hidden', boxShadow: designSystem.shadows.lg }}>
-              <ImageWithFallback src={insight.image} alt={insight.title} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} />
+              {insight.image ? (
+                <ImageWithFallback src={insight.image} alt={insight.title} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} />
+              ) : (
+                <div
+                  role="img"
+                  aria-label={`${category.name} — ${insight.title}`}
+                  style={{
+                    width: '100%',
+                    height: isMobile ? '250px' : '500px',
+                    background: category.gradient,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%)' }} />
+                  <CategoryIcon size={isMobile ? 160 : 260} style={{ color: 'rgba(255,255,255,0.12)', position: 'absolute', right: '-40px', bottom: '-40px' }} />
+                  <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: designSystem.spacing[8] }}>
+                    <CategoryIcon size={isMobile ? 48 : 72} style={{ color: designSystem.colors.neutral.white, marginBottom: designSystem.spacing[4] }} />
+                    <p style={{ color: designSystem.colors.neutral.white, textTransform: 'uppercase', letterSpacing: designSystem.typography.letterSpacing.wider, fontSize: designSystem.typography.fontSize.sm, fontWeight: designSystem.typography.fontWeight.semibold, opacity: 0.95 }}>
+                      {category.name}
+                    </p>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
             <motion.article initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
@@ -376,7 +402,19 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
                       style={{ background: designSystem.colors.neutral.white, borderRadius: designSystem.borderRadius['2xl'], overflow: 'hidden', boxShadow: designSystem.shadows.md }}
                     >
                       <div style={{ position: 'relative', overflow: 'hidden', height: '200px' }}>
-                        <ImageWithFallback src={related.image} alt={related.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} className="group-hover:scale-110" />
+                        {related.image ? (
+                          <ImageWithFallback src={related.image} alt={related.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} className="group-hover:scale-110" />
+                        ) : (
+                          <div
+                            role="img"
+                            aria-label={`${relatedCategory.name} — ${related.title}`}
+                            className="group-hover:scale-110 transition-transform duration-500"
+                            style={{ width: '100%', height: '100%', background: relatedCategory.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
+                          >
+                            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.15), transparent 55%)' }} />
+                            <RelatedIcon size={72} style={{ color: 'rgba(255,255,255,0.9)', position: 'relative', zIndex: 1 }} />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2" style={{ position: 'absolute', top: designSystem.spacing[4], left: designSystem.spacing[4], padding: `${designSystem.spacing[2]} ${designSystem.spacing[3]}`, background: relatedCategory.gradient, color: designSystem.colors.neutral.white, borderRadius: designSystem.borderRadius.full, fontSize: '0.75rem', fontWeight: designSystem.typography.fontWeight.bold }}>
                           <RelatedIcon size={14} />
                           {relatedCategory.name}

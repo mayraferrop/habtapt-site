@@ -69,7 +69,7 @@ Segue EXATAMENTE o mesmo shape do template abaixo (imports, exports, campos), ma
 ${template}
 </template>
 
-Regras:
+Regras gerais:
 - id = "${slug}"
 - date = "${today}", updated_at = "${today}"
 - author = "HABTA", authorRole = "Equipa de Investimento"
@@ -77,12 +77,22 @@ Regras:
 - Os imports e a linha \`const visual = categoryVisuals['<Categoria>'];\` usam a categoria que escolheres
 - icon, iconColor, gradient = visual.icon / visual.iconColor / visual.gradient
 - readTime entre "5 min" e "9 min"
-- excerpt: 1 frase, ~25 palavras
-- tags: 3 a 6 strings relevantes em pt-PT
 - contentBlocks: 12 a 18 blocos mistos (callout, heading2, heading3, paragraph, list) totalizando 600-900 palavras
 - Pelo menos 1 callout, 3+ heading2, 1+ list
 - Conteúdo evergreen — evita números específicos (taxas, preços, % de juro) que fiquem desatualizados
+- Ortografia pt-PT impecável: revê todas as palavras; termos como "erodem" (não "errodem"), "corroem", "acrescem"
 - Brand: HABTA é premium, experiente, criteriosa; fala em "nós" quando ilustra metodologia
+
+Regras de SEO (obrigatórias):
+- Identifica uma focus keyword a partir do tópico (ex.: "ROI reabilitação Lisboa", "yield líquido Portugal"). Usa-a em pt-PT natural.
+- title: 50-65 caracteres, inclui a focus keyword, claro e clicável (sem clickbait)
+- description: 150-160 caracteres, inclui a focus keyword, resume valor concreto para o leitor
+- excerpt: 1 frase de 20-28 palavras, contém a focus keyword ou uma variação próxima
+- A focus keyword (ou uma variação semântica próxima) deve aparecer: no title, no excerpt, no primeiro parágrafo do contentBlocks, e em pelo menos 1 heading2
+- tags: 4 a 6 strings long-tail (ex.: "ROI reabilitação Lisboa", "investimento imobiliário Portugal"), não genéricas de 1 palavra
+- Menciona pelo menos uma vez, de forma natural, "/portfolio" ou "/servicos" (link interno) num bloco paragraph — escrito como texto, ex.: "no nosso /portfolio" ou "no serviço descrito em /servicos"
+- Evita repetição keyword stuffing — varia com sinónimos e termos relacionados
+- Parágrafos curtos (2-4 frases), headings descritivos (não genéricos como "Introdução" ou "Conclusão")
 
 Devolve apenas:
 <file>

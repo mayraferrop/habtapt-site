@@ -30,7 +30,7 @@ export const article: InsightArticle = {
     {
       type: 'callout',
       content:
-        'O ROI de um projeto de reabilitação raramente é o número que aparece numa folha de cálculo apressada. Entre a aquisição e a saída existem dezenas de variáveis — fiscais, técnicas, temporais — que errodem ou ampliam a margem. Na HABTA, o apuramento do retorno real é o primeiro exercício que fazemos antes de qualquer decisão de investimento.',
+        'O ROI de um projeto de reabilitação raramente é o número que aparece numa folha de cálculo apressada. Entre a aquisição e a saída existem dezenas de variáveis — fiscais, técnicas, temporais — que erodem ou ampliam a margem. Na HABTA, o apuramento do retorno real é o primeiro exercício que fazemos antes de qualquer decisão de investimento.',
     },
     {
       type: 'paragraph',
