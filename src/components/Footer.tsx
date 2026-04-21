@@ -9,6 +9,7 @@ import { LogoPattern } from './LogoPatterns';
 const links = {
   menu: [
     { label: 'Home', href: '/' },
+    { label: 'Sobre', href: '/sobre' },
     { label: 'Serviços', href: '/servicos' },
     { label: 'Processo', href: '/processo' },
     { label: 'Imóveis', href: '/portfolio' },
