@@ -19,6 +19,7 @@ export const article: InsightArticle = {
   updated_at: '2026-04-21',
   excerpt:
     'Antes de assinar uma promessa de compra, estes cinco pilares ajudam a separar uma oportunidade de reabilitação de um investimento problemático em Portugal.',
+  image: 'https://images.unsplash.com/photo-1605641532626-5ab1dab56350?w=1600&q=80&auto=format&fit=crop',
   tags: [
     'reabilitação urbana',
     'investimento imobiliário',

@@ -19,6 +19,7 @@ export const article: InsightArticle = {
   updated_at: '2026-04-21',
   excerpt:
     'Calcular o ROI de uma reabilitação em Lisboa exige muito mais do que subtrair o custo de compra ao valor de venda — este guia mostra como apurar o retorno real.',
+  image: 'https://images.unsplash.com/photo-1541323035148-3b6d6b990e1e?w=1600&q=80&auto=format&fit=crop',
   tags: [
     'ROI imobiliário',
     'reabilitação urbana',

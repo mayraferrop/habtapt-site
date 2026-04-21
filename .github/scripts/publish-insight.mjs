@@ -11,6 +11,7 @@ const ROOT = process.cwd();
 const CONTENT_DIR = path.join(ROOT, 'src/content/insights');
 const BACKLOG = path.join(CONTENT_DIR, '_topics-backlog.md');
 const ALL_TS = path.join(CONTENT_DIR, '_all.ts');
+const CATEGORIES = path.join(CONTENT_DIR, '_categories.ts');
 const TEMPLATE = path.join(CONTENT_DIR, 'cinco-pilares-avaliar-reabilitacao-urbana.ts');
 const MODEL = process.env.INSIGHT_MODEL || 'claude-sonnet-4-6';
 
@@ -36,6 +37,26 @@ function slugify(s) {
 
 function toCamelCase(s) {
   return s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function pickPoolImage(categoryName, seed) {
+  const src = fs.readFileSync(CATEGORIES, 'utf8');
+  const blockRegex = new RegExp(
+    String.raw`${categoryName}\s*:\s*\{[\s\S]*?imagePool\s*:\s*\[([\s\S]*?)\]`,
+  );
+  const m = src.match(blockRegex);
+  if (!m) return undefined;
+  const urls = Array.from(m[1].matchAll(/`([^`]+)`|'([^']+)'|"([^"]+)"/g))
+    .map((x) => x[1] || x[2] || x[3])
+    .filter(Boolean);
+  if (urls.length === 0) return undefined;
+  return urls[hashString(seed) % urls.length];
 }
 
 const backlogRaw = fs.readFileSync(BACKLOG, 'utf8');
@@ -72,6 +93,7 @@ ${template}
 Regras gerais:
 - id = "${slug}"
 - date = "${today}", updated_at = "${today}"
+- NÃO incluir o campo \`image\` no ficheiro gerado — é atribuído automaticamente depois pelo script a partir do pool da categoria
 - author = "HABTA", authorRole = "Equipa de Investimento"
 - category = escolhe UM de: 'Investimento' | 'Regulamentação' | 'Sustentabilidade' | 'Mercado' (o mais adequado ao tópico)
 - Os imports e a linha \`const visual = categoryVisuals['<Categoria>'];\` usam a categoria que escolheres
@@ -132,7 +154,7 @@ if (!fileMatch) {
   fail('Resposta não continha <file>...</file>.');
 }
 
-const fileContent = fileMatch[1].trim() + '\n';
+let fileContent = fileMatch[1].trim() + '\n';
 
 const mustContain = [
   'import',
@@ -144,6 +166,18 @@ const mustContain = [
 ];
 for (const needle of mustContain) {
   if (!fileContent.includes(needle)) fail(`Conteúdo gerado não inclui "${needle}".`);
+}
+
+const categoryMatch = fileContent.match(/category:\s*'([^']+)'/);
+if (!categoryMatch) fail('Conteúdo gerado não tem category: \'...\'.');
+const chosenCategory = categoryMatch[1];
+const poolImage = pickPoolImage(chosenCategory, slug);
+if (poolImage && !/\bimage\s*:/.test(fileContent)) {
+  fileContent = fileContent.replace(
+    /(excerpt:\s*(?:'[^']*'|"[^"]*"|`[^`]*`)\s*,\s*\n)/,
+    `$1  image: '${poolImage}',\n`,
+  );
+  console.log(`[publish-insight] Imagem atribuída de pool ${chosenCategory}: ${poolImage}`);
 }
 
 fs.writeFileSync(filePath, fileContent, 'utf8');
