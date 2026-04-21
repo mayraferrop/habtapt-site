@@ -26,19 +26,31 @@ export const categoryVisuals: Record<InsightCategory, CategoryVisual> = {
     icon: 'Building2',
     iconColor: designSystem.colors.brand.accent,
     gradient: designSystem.colors.gradients.accent,
-    imagePool: [],
+    imagePool: [
+      `https://images.unsplash.com/photo-1721244654394-36a7bc2da288${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1721244653652-268631ec049a${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1712696779652-dfca8766c5f8${UNSPLASH_PARAMS}`,
+    ],
   },
   Sustentabilidade: {
     icon: 'Leaf',
     iconColor: designSystem.colors.brand.secondary,
     gradient: designSystem.colors.gradients.secondary,
-    imagePool: [],
+    imagePool: [
+      `https://images.unsplash.com/photo-1556983852-43bf21186b2a${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1565599573128-ae3ef5c9f478${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1693517596637-8190ac7afc0e${UNSPLASH_PARAMS}`,
+    ],
   },
   Mercado: {
     icon: 'BookOpen',
     iconColor: designSystem.colors.brand.primary,
     gradient: designSystem.colors.gradients.tertiary,
-    imagePool: [],
+    imagePool: [
+      `https://images.unsplash.com/photo-1651060782121-ce629ec94201${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1762068305260-d6298b6822ea${UNSPLASH_PARAMS}`,
+      `https://images.unsplash.com/photo-1688297483354-3057315926a1${UNSPLASH_PARAMS}`,
+    ],
   },
 };
 
