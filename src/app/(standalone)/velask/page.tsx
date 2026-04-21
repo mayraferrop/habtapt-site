@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import VelaskPageClient from './_components/VelaskPageClient';
 
 export const metadata: Metadata = {
-  title: 'VELASK Residence — Apartamentos T1 a T3 Duplex em Campanhã, Porto',
-  description: 'VELASK Residence: apartamentos T1 a T3 Duplex de 106 a 118 m² em Campanhã, Porto. Reabilitação premium com entrega em abril de 2026. Acabamentos de luxo e localização estratégica.',
+  title: 'VELASK Residence — T1 a T3 Duplex em Campanhã, Porto',
+  description: 'VELASK Residence: apartamentos T1 a T3 Duplex de 106 a 118 m² em Campanhã, Porto. Reabilitação premium pela HABTA, entrega abril 2026.',
   keywords: [
     'velask residence',
     'velask porto',

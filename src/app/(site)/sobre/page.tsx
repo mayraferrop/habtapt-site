@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import SobreContent from './_components/SobreContent';
 
 export const metadata: Metadata = {
-  title: 'Sobre a HABTA — Reabilitação Urbana e Investimento Imobiliário em Portugal',
-  description: 'Conheça a HABTA: empresa portuguesa sediada em Cascais especializada em reabilitação urbana e investimento imobiliário. Missão, valores, equipa e história da Jornada Prometida LDA.',
+  title: 'Sobre a HABTA — Reabilitação Urbana em Portugal',
+  description: 'Empresa portuguesa sediada em Cascais especializada em reabilitação urbana e investimento imobiliário. Missão, valores e história da HABTA.',
   keywords: [
     'sobre habta',
     'quem somos habta',

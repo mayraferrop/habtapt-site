@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import ServicosContent from './_components/ServicosContent';
 
 export const metadata: Metadata = {
-  title: 'Serviços de Reabilitação Urbana e Investimento Imobiliário',
-  description: 'Serviços de compra estratégica, reforma inteligente e venda otimizada de imóveis em Portugal. Reabilitação urbana completa com gestão de obra, due diligence e marketing imobiliário.',
+  title: 'Serviços de Reabilitação Urbana e Investimento',
+  description: 'Compra estratégica, reforma inteligente e venda otimizada de imóveis em Portugal. Gestão de obra, due diligence e marketing imobiliário pela HABTA.',
   keywords: [
     'serviços reabilitação portugal',
     'consultoria imobiliária portugal',

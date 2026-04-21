@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import ProcessoContent from './_components/ProcessoContent';
 
 export const metadata: Metadata = {
-  title: 'Processo de Reabilitação — As 7 Etapas do Investimento',
-  description: 'Conheça as 7 etapas do processo HABTA: da prospeção à entrega do projeto. Metodologia transparente de reabilitação urbana e investimento imobiliário em Portugal.',
+  title: 'Processo de Reabilitação — 7 Etapas do Investimento',
+  description: 'As 7 etapas do processo HABTA: da prospeção à entrega do projeto. Metodologia transparente de reabilitação urbana em Portugal.',
   keywords: [
     'processo reabilitação urbana',
     'etapas investimento imobiliário',

@@ -14,8 +14,10 @@ const Contact = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: 'HABTA — Imóveis Reabilitados Premium em Portugal | Investimento Imobiliário',
-  description: 'Imóveis reabilitados premium em Lisboa, Porto e Cascais. Reabilitação urbana inteligente e investimento imobiliário de alto rendimento. Apartamentos e moradias com acabamentos de luxo.',
+  title: {
+    absolute: 'HABTA — Imóveis Reabilitados Premium em Portugal',
+  },
+  description: 'Imóveis reabilitados premium em Lisboa, Porto e Cascais. Reabilitação urbana e investimento imobiliário de alto rendimento.',
   keywords: [
     'HABTA',
     'habta portugal',
