@@ -5,7 +5,7 @@ Marcar com `[x]` depois de publicado.
 
 ## Investimento
 - [x] Cinco pilares para avaliar um projeto de reabilitação urbana antes de investir
-- [ ] Como calcular o ROI real de um projeto de reabilitação em Lisboa
+- [x] Como calcular o ROI real de um projeto de reabilitação em Lisboa
 - [ ] Yield bruto vs yield líquido: o que os investidores confundem em Portugal
 - [ ] Financiamento hipotecário para reabilitação em Portugal — o que os bancos olham
 - [ ] Quando faz sentido investir em reabilitação via sociedade vs nome próprio
