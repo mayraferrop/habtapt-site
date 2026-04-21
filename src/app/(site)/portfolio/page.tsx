@@ -75,7 +75,7 @@ export default async function PortfolioPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbJsonLd, collectionPageJsonLd]) }}
       />
       <Section background="white" style={{ paddingTop: '7.5rem' }}>
-        <Portfolio projects={projects.length > 0 ? projects : undefined} />
+        <Portfolio projects={projects} />
       </Section>
     </>
   );
