@@ -45,11 +45,34 @@ const breadcrumbJsonLd = {
 export default async function PortfolioPage() {
   const projects = await fetchProjects();
 
+  const collectionPageJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': 'https://habta.eu/portfolio',
+    url: 'https://habta.eu/portfolio',
+    name: 'Portfólio HABTA — Projetos de Reabilitação Urbana',
+    description:
+      'Projetos de reabilitação urbana concluídos e em curso em Portugal. Apartamentos e moradias reabilitados em Lisboa, Porto e Cascais.',
+    inLanguage: 'pt-PT',
+    isPartOf: { '@id': 'https://habta.eu/#website' },
+    about: { '@id': 'https://habta.eu/#organization' },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: projects.length,
+      itemListElement: projects.slice(0, 20).map((project, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `https://habta.eu/portfolio/${project.id}`,
+        name: project.title,
+      })),
+    },
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbJsonLd, collectionPageJsonLd]) }}
       />
       <Section background="white" style={{ paddingTop: '7.5rem' }}>
         <Portfolio projects={projects.length > 0 ? projects : undefined} />

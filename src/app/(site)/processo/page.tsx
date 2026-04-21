@@ -4,6 +4,22 @@ import ProcessoContent from './_components/ProcessoContent';
 export const metadata: Metadata = {
   title: 'Processo de Reabilitação — As 7 Etapas do Investimento',
   description: 'Conheça as 7 etapas do processo HABTA: da prospeção à entrega do projeto. Metodologia transparente de reabilitação urbana e investimento imobiliário em Portugal.',
+  keywords: [
+    'processo reabilitação urbana',
+    'etapas investimento imobiliário',
+    'metodologia reabilitação portugal',
+    'como funciona reabilitação urbana',
+    'processo fix and flip portugal',
+    'gestão projeto reabilitação',
+    'due diligence imobiliária passos',
+    'prospeção imóveis portugal',
+    'reforma inteligente etapas',
+    'projeto arquitetura reabilitação',
+    'gestão de obra portugal',
+    'marketing imobiliário fases',
+    'habta metodologia',
+    'processo investimento transparente',
+  ],
   alternates: {
     canonical: 'https://habta.eu/processo',
   },

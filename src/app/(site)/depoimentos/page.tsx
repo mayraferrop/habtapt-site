@@ -6,6 +6,18 @@ import { fetchTestimonials } from '../_lib/fetchTestimonials';
 export const metadata: Metadata = {
   title: 'Depoimentos de Clientes e Investidores',
   description: 'Depoimentos reais de clientes e investidores sobre a HABTA. Descubra a experiência de quem já investiu em reabilitação urbana e imóveis premium em Portugal.',
+  keywords: [
+    'depoimentos habta',
+    'testemunhos clientes habta',
+    'reviews habta',
+    'avaliações habta',
+    'experiência investidores imobiliário',
+    'clientes satisfeitos imobiliária portugal',
+    'casos de sucesso reabilitação',
+    'testemunhos investimento imobiliário portugal',
+    'opiniões clientes reabilitação urbana',
+    'reputação habta',
+  ],
   alternates: {
     canonical: 'https://habta.eu/depoimentos',
   },
