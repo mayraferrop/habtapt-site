@@ -135,15 +135,27 @@ export function Portfolio({ variant = 'full', projects: serverProjects }: Portfo
               </span>
             </div>
 
-            <h2
-              id="portfolio-title"
-              style={{
-                color: designSystem.colors.neutral[900],
-                marginBottom: designSystem.spacing.md,
-              }}
-            >
-              {variant === 'homepage' ? 'Imóveis Disponíveis' : 'Projetos de Alto Retorno'}
-            </h2>
+            {variant === 'homepage' ? (
+              <h2
+                id="portfolio-title"
+                style={{
+                  color: designSystem.colors.neutral[900],
+                  marginBottom: designSystem.spacing.md,
+                }}
+              >
+                Imóveis Disponíveis
+              </h2>
+            ) : (
+              <h1
+                id="portfolio-title"
+                style={{
+                  color: designSystem.colors.neutral[900],
+                  marginBottom: designSystem.spacing.md,
+                }}
+              >
+                Projetos de Alto Retorno
+              </h1>
+            )}
             <p
               style={{
                 color: designSystem.colors.neutral[600],

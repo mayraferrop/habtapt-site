@@ -178,7 +178,7 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
               </span>
             </motion.div>
 
-            <h2
+            <h1
               id="insights-title"
               style={{
                 fontSize: 'clamp(2rem, 4vw, 3rem)',
@@ -190,7 +190,7 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
               }}
             >
               Insights & Mercado
-            </h2>
+            </h1>
 
             <p
               className="max-w-2xl mx-auto"

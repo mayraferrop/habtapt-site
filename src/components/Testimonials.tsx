@@ -137,7 +137,7 @@ export function Testimonials({ testimonials: serverTestimonials }: TestimonialsP
             </span>
           </motion.div>
 
-          <h2
+          <h1
             id="testimonials-title"
             style={{
               fontSize: 'clamp(2rem, 4vw, 3rem)',
@@ -148,7 +148,7 @@ export function Testimonials({ testimonials: serverTestimonials }: TestimonialsP
             }}
           >
             O Que Dizem os Nossos Parceiros
-          </h2>
+          </h1>
 
           <p
             className="max-w-2xl mx-auto"
