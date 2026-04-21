@@ -13,9 +13,9 @@ export async function generateMetadata(
   if (insight) {
     const title = insight.title;
     const description = insight.excerpt
-      ? insight.excerpt.slice(0, 160)
+      ? insight.excerpt.slice(0, 155)
       : insight.description
-        ? insight.description.slice(0, 160)
+        ? insight.description.slice(0, 155)
         : `${insight.title} — Artigo HABTA sobre ${insight.category || 'investimento imobiliário'}`;
 
     return {

@@ -31,7 +31,7 @@ export async function generateMetadata(
   if (project) {
     const title = project.title;
     const description = project.description
-      ? project.description.slice(0, 160)
+      ? project.description.slice(0, 155)
       : `${project.title} — Projeto de reabilitação HABTA em ${project.location || 'Portugal'}`;
 
     return {
