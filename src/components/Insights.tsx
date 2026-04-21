@@ -61,46 +61,6 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
   const [isLoading, setIsLoading] = useState(!serverInsights);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  // Fallback insights
-  const fallbackInsights: Insight[] = useMemo(
-    () => [
-      {
-        id: '1',
-        icon: TrendingUp,
-        title: 'Como avaliar o potencial de valorização de um imóvel urbano',
-        description:
-          'Aprenda os principais indicadores técnicos e de mercado para identificar oportunidades de alta rentabilidade na reabilitação urbana.',
-        category: 'Investimento',
-        readTime: '5 min',
-        gradient: designSystem.colors.gradients.primary,
-        iconColor: designSystem.colors.brand.primary,
-      },
-      {
-        id: '2',
-        icon: Building2,
-        title: 'O impacto das zonas ARU na rentabilidade',
-        description:
-          'Entenda como as Áreas de Reabilitação Urbana influenciam os incentivos fiscais e aumentam o retorno de investimento em projetos imobiliários.',
-        category: 'Regulamentação',
-        readTime: '7 min',
-        gradient: designSystem.colors.gradients.secondary,
-        iconColor: designSystem.colors.brand.secondary,
-      },
-      {
-        id: '3',
-        icon: Leaf,
-        title: 'Reabilitação sustentável: o futuro do mercado imobiliário',
-        description:
-          'Descubra como a sustentabilidade e eficiência energética estão transformando o setor de reabilitação e agregando valor aos imóveis.',
-        category: 'Sustentabilidade',
-        readTime: '6 min',
-        gradient: designSystem.colors.gradients.accent,
-        iconColor: designSystem.colors.brand.accent,
-      },
-    ],
-    []
-  );
-
   // Fetch insights com cache (skip if server-provided)
   useEffect(() => {
     if (serverInsights) return;
@@ -124,7 +84,6 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
 
         const data = await response.json();
 
-        // Map server data to component format
         const mappedInsights = (data.insights || []).map((insight: { id: string; icon: string; title: string; description: string; category: string; readTime: string; gradient: string; iconColor: string }) => {
           let IconComponent = TrendingUp;
           if (insight.icon === 'Building2') IconComponent = Building2;
@@ -143,24 +102,20 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
           };
         });
 
+        setArticles(mappedInsights);
         if (mappedInsights.length > 0) {
-          setArticles(mappedInsights);
-          
-          // Salvar no cache
           projectsCache.set(CACHE_KEYS.INSIGHTS, mappedInsights);
-        } else {
-          setArticles(fallbackInsights);
         }
       } catch (error) {
         console.error('[Insights] ❌ Error fetching insights:', error);
-        setArticles(fallbackInsights);
+        setArticles([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchInsights();
-  }, [fallbackInsights, serverInsights]);
+  }, [serverInsights]);
 
   // Handler memoizado
   const handleInsightClick = useCallback(
@@ -298,6 +253,53 @@ export function Insights({ insights: serverInsights }: InsightsProps) {
           {/* Articles Grid with Skeleton */}
           {isLoading ? (
             <InsightsGridSkeleton count={3} />
+          ) : filteredArticles.length === 0 ? (
+            <div
+              className="text-center max-w-2xl mx-auto"
+              style={{
+                padding: designSystem.spacing[16],
+                background: designSystem.colors.neutral.white,
+                borderRadius: designSystem.borderRadius['2xl'],
+                border: `1px solid ${designSystem.colors.neutral[200]}`,
+              }}
+            >
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  background: designSystem.helpers.hexToRgba(designSystem.colors.brand.secondary, 0.1),
+                  borderRadius: designSystem.borderRadius.full,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto',
+                  marginBottom: designSystem.spacing[6],
+                }}
+              >
+                <BookOpen size={32} style={{ color: designSystem.colors.brand.secondary }} />
+              </div>
+              <h3
+                style={{
+                  fontSize: designSystem.typography.fontSize['2xl'],
+                  fontWeight: designSystem.typography.fontWeight.bold,
+                  color: designSystem.colors.brand.primary,
+                  marginBottom: designSystem.spacing[4],
+                }}
+              >
+                {activeCategory === 'all' ? 'Em breve, novos insights' : 'Sem artigos nesta categoria'}
+              </h3>
+              <p
+                style={{
+                  fontSize: designSystem.typography.fontSize.base,
+                  color: designSystem.colors.neutral[600],
+                  lineHeight: designSystem.typography.lineHeight.relaxed,
+                }}
+              >
+                {activeCategory === 'all'
+                  ? 'Estamos a preparar análises exclusivas sobre o mercado imobiliário em Portugal. Subscreva a newsletter para receber em primeira mão.'
+                  : 'Ainda não publicámos artigos nesta categoria. Explore as outras categorias ou subscreva a newsletter.'}
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
               {filteredArticles.map((article, index) => (

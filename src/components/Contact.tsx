@@ -8,7 +8,12 @@ import { useInView } from './useInView';
 import { designSystem } from './design-system';
 import { submitContact } from '../lib/actions/contact';
 
-export function Contact() {
+interface ContactProps {
+  headingLevel?: 1 | 2;
+}
+
+export function Contact({ headingLevel = 2 }: ContactProps = {}) {
+  const HeadingTag = headingLevel === 1 ? 'h1' : 'h2';
   const { ref, isInView } = useInView({ threshold: 0.1 });
   const [formData, setFormData] = useState({
     name: '',
@@ -220,7 +225,7 @@ export function Contact() {
             </span>
           </div>
 
-          <h1
+          <HeadingTag
             id="contact-title"
             style={{
               fontSize: designSystem.typography.fontSize['4xl'],
@@ -231,7 +236,7 @@ export function Contact() {
             }}
           >
             Vamos conversar?
-          </h1>
+          </HeadingTag>
 
           <p
             id="contact-description"
@@ -279,6 +284,7 @@ export function Contact() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
+                  required
                   aria-required="true"
                   aria-invalid={formErrors.name ? 'true' : 'false'}
                   aria-describedby={formErrors.name ? 'name-error' : undefined}
@@ -327,6 +333,7 @@ export function Contact() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  required
                   aria-required="true"
                   aria-invalid={formErrors.email ? 'true' : 'false'}
                   aria-describedby={formErrors.email ? 'email-error' : undefined}
@@ -375,6 +382,7 @@ export function Contact() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  required
                   aria-required="true"
                   aria-invalid={formErrors.phone ? 'true' : 'false'}
                   aria-describedby={formErrors.phone ? 'phone-error' : undefined}
@@ -422,6 +430,7 @@ export function Contact() {
                   name="interest"
                   value={formData.interest}
                   onChange={handleChange}
+                  required
                   aria-required="true"
                   aria-invalid={formErrors.interest ? 'true' : 'false'}
                   aria-describedby={formErrors.interest ? 'interest-error' : undefined}
@@ -479,6 +488,7 @@ export function Contact() {
                   value={formData.message}
                   onChange={handleChange}
                   rows={5}
+                  required
                   aria-required="true"
                   aria-invalid={formErrors.message ? 'true' : 'false'}
                   aria-describedby={formErrors.message ? 'message-error' : undefined}

@@ -95,7 +95,7 @@ export default function ContactoPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbJsonLd, contactPageJsonLd]) }}
       />
       <Section background="white" style={{ paddingTop: '7.5rem' }}>
-        <Contact />
+        <Contact headingLevel={1} />
       </Section>
     </>
   );

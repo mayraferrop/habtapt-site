@@ -73,7 +73,7 @@ export default async function BlogPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbJsonLd, blogJsonLd]) }}
       />
       <Section background="white" style={{ paddingTop: '7.5rem' }}>
-        <Insights insights={insights.length > 0 ? insights : undefined} />
+        <Insights insights={insights} />
       </Section>
     </>
   );
