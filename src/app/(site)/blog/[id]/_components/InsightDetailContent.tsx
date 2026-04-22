@@ -226,6 +226,25 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
     document.body.removeChild(textArea);
   };
 
+  const slugifyHeading = (text: string) =>
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 80);
+
+  const extractHeadings = (blocks: ContentBlock[] | undefined) => {
+    if (!blocks) return [] as { id: string; text: string }[];
+    return blocks
+      .filter((b) => b.type === 'heading2' && typeof b.content === 'string')
+      .map((b) => ({ id: slugifyHeading(b.content as string), text: b.content as string }));
+  };
+
+  const tocHeadings = extractHeadings(insight.contentBlocks);
+
   const renderContent = () => {
     if (insight.contentBlocks && Array.isArray(insight.contentBlocks)) {
       return renderStructuredContent(insight.contentBlocks);
@@ -252,7 +271,7 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
     return blocks.map((block, index) => {
       switch (block.type) {
         case 'heading2':
-          return <h2 key={index} style={{ fontSize: '1.875rem', fontWeight: designSystem.typography.fontWeight.black, color: designSystem.colors.brand.primary, marginTop: index === 0 ? '0' : designSystem.spacing[12], marginBottom: designSystem.spacing[4] }}>{block.content as string}</h2>;
+          return <h2 key={index} id={slugifyHeading(block.content as string)} style={{ fontSize: '1.875rem', fontWeight: designSystem.typography.fontWeight.black, color: designSystem.colors.brand.primary, marginTop: index === 0 ? '0' : designSystem.spacing[12], marginBottom: designSystem.spacing[4], scrollMarginTop: '100px' }}>{block.content as string}</h2>;
         case 'heading3':
           return <h3 key={index} style={{ fontSize: '1.5rem', fontWeight: designSystem.typography.fontWeight.bold, color: designSystem.colors.brand.primary, marginTop: designSystem.spacing[8], marginBottom: designSystem.spacing[3] }}>{block.content as string}</h3>;
         case 'paragraph':
@@ -328,7 +347,33 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
     <>
       <Section background="white" style={{ paddingTop: '100px', paddingBottom: '0' }}>
         <Container>
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} style={{ marginBottom: designSystem.spacing[6] }}>
+          <motion.nav
+            aria-label="Breadcrumb"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{ marginBottom: designSystem.spacing[6], fontSize: '0.875rem', color: designSystem.colors.neutral[600] }}
+          >
+            <ol className="flex flex-wrap items-center" style={{ gap: designSystem.spacing[2], listStyle: 'none', padding: 0, margin: 0 }}>
+              <li>
+                <a href="/" style={{ color: designSystem.colors.neutral[600], textDecoration: 'none' }} onMouseEnter={(e) => (e.currentTarget.style.color = designSystem.colors.brand.primary)} onMouseLeave={(e) => (e.currentTarget.style.color = designSystem.colors.neutral[600])}>
+                  Início
+                </a>
+              </li>
+              <li aria-hidden="true"><ChevronRight size={14} /></li>
+              <li>
+                <a href="/blog" style={{ color: designSystem.colors.neutral[600], textDecoration: 'none' }} onMouseEnter={(e) => (e.currentTarget.style.color = designSystem.colors.brand.primary)} onMouseLeave={(e) => (e.currentTarget.style.color = designSystem.colors.neutral[600])}>
+                  Insights
+                </a>
+              </li>
+              <li aria-hidden="true"><ChevronRight size={14} /></li>
+              <li aria-current="page" style={{ color: designSystem.colors.brand.primary, fontWeight: designSystem.typography.fontWeight.semibold, maxWidth: '60ch', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {insight.title}
+              </li>
+            </ol>
+          </motion.nav>
+
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} style={{ marginBottom: designSystem.spacing[6] }}>
             <button
               onClick={() => router.push('/blog')}
               className="flex items-center gap-2 group"
@@ -478,6 +523,38 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
                   ))}
                 </ul>
               </motion.aside>
+            )}
+
+            {tocHeadings.length >= 3 && (
+              <motion.nav
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.295 }}
+                aria-label="Nesta página"
+                style={{
+                  marginBottom: designSystem.spacing[10],
+                  padding: designSystem.spacing[6],
+                  background: designSystem.colors.neutral[50],
+                  border: `1px solid ${designSystem.colors.neutral[200]}`,
+                  borderRadius: designSystem.borderRadius.lg,
+                }}
+              >
+                <p style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: designSystem.colors.neutral[600], fontWeight: designSystem.typography.fontWeight.bold, marginBottom: designSystem.spacing[3] }}>
+                  Nesta página
+                </p>
+                <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: designSystem.spacing[2], counterReset: 'toc' }}>
+                  {tocHeadings.map((h) => (
+                    <li key={h.id} style={{ counterIncrement: 'toc', paddingLeft: designSystem.spacing[6], position: 'relative' }}>
+                      <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: 0, fontSize: '0.8125rem', color: category.color, fontWeight: designSystem.typography.fontWeight.bold, fontVariantNumeric: 'tabular-nums' }}>
+                        {String(tocHeadings.indexOf(h) + 1).padStart(2, '0')}
+                      </span>
+                      <a href={`#${h.id}`} style={{ fontSize: '0.9375rem', color: designSystem.colors.brand.primary, textDecoration: 'none', lineHeight: '1.6' }} onMouseEnter={(e) => (e.currentTarget.style.color = category.color)} onMouseLeave={(e) => (e.currentTarget.style.color = designSystem.colors.brand.primary)}>
+                        {h.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </motion.nav>
             )}
 
             <motion.article initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
