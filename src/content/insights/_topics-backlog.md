@@ -6,7 +6,7 @@ Marcar com `[x]` depois de publicado.
 ## Investimento
 - [x] Cinco pilares para avaliar um projeto de reabilitação urbana antes de investir
 - [x] Como calcular o ROI real de um projeto de reabilitação em Lisboa
-- [ ] Yield bruto vs yield líquido: o que os investidores confundem em Portugal
+- [x] Yield bruto vs yield líquido: o que os investidores confundem em Portugal
 - [ ] Financiamento hipotecário para reabilitação em Portugal — o que os bancos olham
 - [ ] Quando faz sentido investir em reabilitação via sociedade vs nome próprio
 - [ ] Os três cenários fiscais mais comuns em reabilitação urbana
@@ -34,7 +34,7 @@ Marcar com `[x]` depois de publicado.
 
 ## Regulamentação
 - [x] Áreas de Reabilitação Urbana (ARU): como confirmar se o imóvel está incluído
-- [ ] Regime jurídico do arrendamento urbano: o que mudou e como afeta investidores
+- [x] Regime jurídico do arrendamento urbano: o que mudou e como afeta investidores
 - [ ] IMI e IMT em reabilitação: isenções e armadilhas
 - [ ] Alojamento local em 2026: estado da arte por município
 - [ ] Propriedade horizontal: transformar um edifício em frações
@@ -51,7 +51,7 @@ Marcar com `[x]` depois de publicado.
 - [ ] Direito de preferência em ARU: como funciona e como evitar bloqueios
 
 ## Mercado
-- [ ] Preços médios por m² nas freguesias centrais de Lisboa — leitura crítica
+- [x] Preços médios por m² nas freguesias centrais de Lisboa — leitura crítica
 - [ ] O mapa do investimento: que cidades portuguesas crescem e porquê
 - [ ] Fatores de risco no mercado imobiliário português em 2026
 - [ ] Compradores estrangeiros: perfis e impacto nos preços
@@ -69,7 +69,7 @@ Marcar com `[x]` depois de publicado.
 - [ ] Interior do país como alternativa de investimento 2026: mitos e realidade
 
 ## Sustentabilidade
-- [ ] Certificação energética: passos concretos para passar de D para B
+- [x] Certificação energética: passos concretos para passar de D para B
 - [ ] Materiais reciclados em reabilitação: o que realmente vale a pena
 - [ ] Gestão de resíduos de obra: enquadramento legal e custo
 - [ ] Isolamento térmico em edifícios pombalinos: limitações e soluções

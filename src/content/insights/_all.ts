@@ -11,21 +11,12 @@ import { article as zonasPremiumDoPortoGuiaInvestimento2026 } from './zonas-prem
 import { article as certificacaoEnergeticaEmPortugalGuiaCompleto2026 } from './certificacao-energetica-em-portugal-guia-completo-2026';
 import { article as reabilitacaoSustentavelEmPortugalMateriaisSistemas2026 } from './reabilitacao-sustentavel-em-portugal-materiais-sistemas-2026';
 import { article as eficienciaEnergeticaEmImoveisReabilitadosGuia2026 } from './eficiencia-energetica-em-imoveis-reabilitados-guia-2026';
+import { article as yieldBrutoVsYieldLiquidoOQueOsInvestidoresConfundemEmPortugal } from './yield-bruto-vs-yield-liquido-o-que-os-investidores-confundem-em-portugal';
+import { article as regimeJuridicoDoArrendamentoUrbanoOQueMudou } from './regime-juridico-do-arrendamento-urbano-o-que-mudou';
+import { article as certificacaoEnergeticaPassosConcretosParaPassarDeD } from './certificacao-energetica-passos-concretos-para-passar-de-d';
+import { article as precosMediosPorMNasFreguesiasCentraisDe } from './precos-medios-por-m-nas-freguesias-centrais-de';
 
-const articles: InsightArticle[] = [
-  cincoPilares,
-  comoCalcularORoiRealDeUmProjeto,
-  areasDeReabilitacaoUrbanaAruComoConfirmarSe,
-  investirEmImoveisEmPortugalGuiaCompleto2026,
-  reabilitacaoUrbanaEmPortugalGuiaCompleto2026,
-  mercadoImobiliarioPortugal2026AnaliseCompleta,
-  fiscalidadeImobiliariaEmPortugalGuiaCompleto2026,
-  zonasPremiumDeLisboaGuiaInvestimento2026,
-  zonasPremiumDoPortoGuiaInvestimento2026,
-  certificacaoEnergeticaEmPortugalGuiaCompleto2026,
-  reabilitacaoSustentavelEmPortugalMateriaisSistemas2026,
-  eficienciaEnergeticaEmImoveisReabilitadosGuia2026,
-];
+const articles: InsightArticle[] = [cincoPilares, comoCalcularORoiRealDeUmProjeto, areasDeReabilitacaoUrbanaAruComoConfirmarSe, investirEmImoveisEmPortugalGuiaCompleto2026, reabilitacaoUrbanaEmPortugalGuiaCompleto2026, mercadoImobiliarioPortugal2026AnaliseCompleta, fiscalidadeImobiliariaEmPortugalGuiaCompleto2026, zonasPremiumDeLisboaGuiaInvestimento2026, zonasPremiumDoPortoGuiaInvestimento2026, certificacaoEnergeticaEmPortugalGuiaCompleto2026, reabilitacaoSustentavelEmPortugalMateriaisSistemas2026, eficienciaEnergeticaEmImoveisReabilitadosGuia2026, yieldBrutoVsYieldLiquidoOQueOsInvestidoresConfundemEmPortugal, regimeJuridicoDoArrendamentoUrbanoOQueMudou, certificacaoEnergeticaPassosConcretosParaPassarDeD, precosMediosPorMNasFreguesiasCentraisDe];
 
 export function getAllInsights(): InsightArticle[] {
   return [...articles].sort((a, b) => {
