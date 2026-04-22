@@ -46,13 +46,17 @@ jobs:
       - name: Commit and push
         run: |
           set -euo pipefail
-          if [[ ! -f .tmp-insight-slug ]]; then
-            echo "Sem slug publicado (backlog vazio?). A sair."
+          if [[ ! -f .tmp-insight-slugs ]]; then
+            echo "Sem slugs publicados (backlog vazio?). A sair."
             exit 0
           fi
-          SLUG=$(cat .tmp-insight-slug)
-          TOPIC=$(cat .tmp-insight-topic)
-          rm -f .tmp-insight-slug .tmp-insight-topic
+          SLUGS_FILE=.tmp-insight-slugs
+          TOPICS_FILE=.tmp-insight-topics
+          SLUG_COUNT=$(wc -l < "$SLUGS_FILE" | tr -d ' ')
+          FIRST_SLUG=$(head -n 1 "$SLUGS_FILE")
+          SLUGS_LIST=$(awk '{print "  - " $0}' "$SLUGS_FILE")
+          TOPICS_LIST=$(awk '{print "  - " $0}' "$TOPICS_FILE")
+          rm -f "$SLUGS_FILE" "$TOPICS_FILE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/
@@ -60,8 +64,16 @@ jobs:
             echo "Sem mudanças para commitar."
             exit 0
           fi
-          git commit -m "content(blog): publish ${SLUG}" \
-            -m "Tópico: ${TOPIC}" \
+          if [[ "$SLUG_COUNT" == "1" ]]; then
+            COMMIT_TITLE="content(blog): publish ${FIRST_SLUG}"
+          else
+            COMMIT_TITLE="content(blog): publish ${SLUG_COUNT} insights (${FIRST_SLUG} +${SLUG_COUNT}...)"
+          fi
+          git commit -m "$COMMIT_TITLE" \
+            -m "Slugs:" \
+            -m "$SLUGS_LIST" \
+            -m "Tópicos:" \
+            -m "$TOPICS_LIST" \
             -m "Gerado pelo workflow daily-insight." \
             -m "Co-Authored-By: Claude <noreply@anthropic.com>"
           git push origin main

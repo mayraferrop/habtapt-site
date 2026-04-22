@@ -1,7 +1,14 @@
 #!/usr/bin/env node
-// Gera 1 artigo novo em src/content/insights/ via API Anthropic.
+// Gera 1 artigo por cada categoria (4 no total) em src/content/insights/ via API Anthropic.
 // Usado pelo workflow daily-insight.yml e pode correr localmente:
 //   ANTHROPIC_API_KEY=... node .github/scripts/publish-insight.mjs
+//
+// Variáveis de ambiente:
+//   ANTHROPIC_API_KEY — obrigatório
+//   INSIGHT_MODEL     — opcional (default: claude-sonnet-4-6)
+//   INSIGHT_CATEGORY  — opcional (default: todas as 4). Valores aceites:
+//                       'Investimento' | 'Regulamentação' | 'Sustentabilidade' | 'Mercado'
+//                       ou 'all' (todas, uma por categoria)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -112,33 +119,31 @@ function getLastPublishedCategory() {
   }
 }
 
-const backlogRaw = fs.readFileSync(BACKLOG, 'utf8');
-const pending = parsePendingTopics(backlogRaw);
-if (pending.length === 0) {
-  console.log('Sem tópicos pendentes no backlog. A sair.');
-  process.exit(0);
+function pickTopicForCategory(targetCategory, usedSlugs) {
+  const backlogRaw = fs.readFileSync(BACKLOG, 'utf8');
+  const pending = parsePendingTopics(backlogRaw);
+  const forCat = pending.filter(
+    (p) => p.suggestedCategory === targetCategory && !usedSlugs.has(slugify(p.topic)),
+  );
+  return forCat[0] || null;
 }
 
-const lastCategory = getLastPublishedCategory();
-console.log(`[publish-insight] Última categoria publicada: ${lastCategory ?? '(nenhuma)'}`);
+async function publishOne(chosen) {
+  const topic = chosen.topic;
+  const suggestedCategory = chosen.suggestedCategory;
+  const slug = slugify(topic);
+  const camelName = toCamelCase(slug);
+  const filePath = path.join(CONTENT_DIR, `${slug}.ts`);
+  const today = new Date().toISOString().slice(0, 10);
+  const currentYear = new Date().getFullYear();
+  const template = fs.readFileSync(TEMPLATE, 'utf8');
 
-// Rotação: preferir tópico cuja categoria sugerida seja diferente da última publicada
-let chosen = pending.find((p) => p.suggestedCategory !== lastCategory) || pending[0];
-console.log(
-  `[publish-insight] Rotação: categoria escolhida ${chosen.suggestedCategory} (secção "${chosen.section}")`,
-);
-
-const topic = chosen.topic;
-const suggestedCategory = chosen.suggestedCategory;
-const slug = slugify(topic);
-const camelName = toCamelCase(slug);
-const filePath = path.join(CONTENT_DIR, `${slug}.ts`);
-
-if (fs.existsSync(filePath)) fail(`Ficheiro já existe: ${filePath}. Marque o tópico [x] ou escolha outro.`);
-
-const template = fs.readFileSync(TEMPLATE, 'utf8');
-const today = new Date().toISOString().slice(0, 10);
-const currentYear = new Date().getFullYear();
+  if (fs.existsSync(filePath)) {
+    console.warn(
+      `::warning::Ficheiro já existe, a saltar: ${filePath}. Marca o tópico [x] ou escolha outro.`,
+    );
+    return null;
+  }
 
 const systemPrompt = `És um redator sénior de conteúdo técnico para a HABTA — uma empresa premium de reabilitação urbana e investimento imobiliário em Portugal (Lisboa, Porto, Cascais).
 
@@ -362,19 +367,68 @@ if (updatedAllTs === allTsWithImport) fail('Não consegui atualizar o array arti
 fs.writeFileSync(ALL_TS, updatedAllTs, 'utf8');
 console.log('[publish-insight] _all.ts atualizado.');
 
-const updatedBacklog = backlogRaw.replace(`- [ ] ${topic}`, `- [x] ${topic}`);
+const currentBacklog = fs.readFileSync(BACKLOG, 'utf8');
+const updatedBacklog = currentBacklog.replace(`- [ ] ${topic}`, `- [x] ${topic}`);
 fs.writeFileSync(BACKLOG, updatedBacklog, 'utf8');
 console.log('[publish-insight] Backlog marcado como publicado.');
 
-try {
-  execSync('npx tsc --noEmit', { stdio: 'inherit' });
-} catch {
-  console.error('[publish-insight] Type-check falhou. A reverter.');
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  execSync(`git checkout -- ${ALL_TS} ${BACKLOG}`);
-  fail('Type-check falhou, mudanças revertidas.');
+  return { slug, topic, filePath, category: chosenCategory };
 }
 
-fs.writeFileSync('.tmp-insight-slug', slug, 'utf8');
-fs.writeFileSync('.tmp-insight-topic', topic, 'utf8');
-console.log(`[publish-insight] Sucesso: ${slug}`);
+async function main() {
+  const singleCategory = process.env.INSIGHT_CATEGORY;
+  const targetCategories = singleCategory && singleCategory !== 'all'
+    ? [singleCategory]
+    : VALID_CATEGORIES;
+
+  if (singleCategory && singleCategory !== 'all' && !VALID_CATEGORIES.includes(singleCategory)) {
+    fail(`INSIGHT_CATEGORY inválida: ${singleCategory}. Válidas: ${VALID_CATEGORIES.join(', ')} ou 'all'.`);
+  }
+
+  console.log(`[publish-insight] Categorias-alvo: ${targetCategories.join(', ')}`);
+
+  const results = [];
+  const usedSlugs = new Set();
+
+  for (const cat of targetCategories) {
+    const chosen = pickTopicForCategory(cat, usedSlugs);
+    if (!chosen) {
+      console.warn(`::warning::Sem tópicos pendentes para categoria "${cat}". A saltar.`);
+      continue;
+    }
+    console.log(`\n[publish-insight] === Categoria: ${cat} ===`);
+    try {
+      const r = await publishOne(chosen);
+      if (r) {
+        results.push(r);
+        usedSlugs.add(r.slug);
+      }
+    } catch (err) {
+      console.error(`::error::Falha a publicar para categoria "${cat}": ${err.message || err}`);
+    }
+  }
+
+  if (results.length === 0) {
+    console.log('[publish-insight] Nenhum artigo publicado.');
+    process.exit(0);
+  }
+
+  console.log(`\n[publish-insight] Type-check final sobre ${results.length} artigo(s)...`);
+  try {
+    execSync('npx tsc --noEmit', { stdio: 'inherit' });
+  } catch {
+    console.error('[publish-insight] Type-check falhou. A reverter todos os artigos.');
+    for (const r of results) {
+      if (fs.existsSync(r.filePath)) fs.unlinkSync(r.filePath);
+    }
+    execSync(`git checkout -- ${ALL_TS} ${BACKLOG}`);
+    fail('Type-check falhou, mudanças revertidas.');
+  }
+
+  fs.writeFileSync('.tmp-insight-slugs', results.map((r) => r.slug).join('\n'), 'utf8');
+  fs.writeFileSync('.tmp-insight-topics', results.map((r) => r.topic).join('\n'), 'utf8');
+  console.log(`\n[publish-insight] Sucesso: ${results.length} artigo(s) publicado(s):`);
+  for (const r of results) console.log(`  - [${r.category}] ${r.slug}`);
+}
+
+main().catch((err) => fail(err.message || String(err)));
