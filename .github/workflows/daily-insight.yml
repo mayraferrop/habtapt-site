@@ -52,7 +52,7 @@ jobs:
           fi
           SLUGS_FILE=.tmp-insight-slugs
           TOPICS_FILE=.tmp-insight-topics
-          SLUG_COUNT=$(wc -l < "$SLUGS_FILE" | tr -d ' ')
+          SLUG_COUNT=$(awk 'END{print NR}' "$SLUGS_FILE")
           FIRST_SLUG=$(head -n 1 "$SLUGS_FILE")
           SLUGS_LIST=$(awk '{print "  - " $0}' "$SLUGS_FILE")
           TOPICS_LIST=$(awk '{print "  - " $0}' "$TOPICS_FILE")
