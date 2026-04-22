@@ -192,7 +192,7 @@ export const article: InsightArticle = {
     {
       type: 'paragraph',
       content:
-        'A verificação do enquadramento em ARU é a primeira etapa — mas a viabilidade de um investimento de reabilitação depende de cruzar esse enquadramento com o estado do imóvel, o orçamento de obra, o potencial de valorização e o modelo fiscal mais eficiente. A nossa equipa, descrita em /servicos, acompanha este processo desde a due diligence inicial até à obtenção do certificado de reabilitação urbana. Se está a analisar um imóvel concreto em Lisboa, Porto ou Cascais, pode contactar-nos diretamente ou consultar os projetos desenvolvidos em /portfolio.',
+        'A verificação do enquadramento em ARU é a primeira etapa — mas a viabilidade de um investimento de reabilitação depende de cruzar esse enquadramento com o estado do imóvel, o orçamento de obra, o potencial de valorização e o modelo fiscal mais eficiente. A nossa equipa acompanha este processo desde a due diligence inicial até à obtenção do certificado de reabilitação urbana — detalhes em <a href="/servicos">serviços</a>. Para aprofundar, veja o <a href="/blog/reabilitacao-urbana-em-portugal-guia-completo-2026">guia completo de reabilitação urbana</a> e os <a href="/blog/cinco-pilares-avaliar-reabilitacao-urbana">cinco pilares para avaliar um projeto</a>. Se está a analisar um imóvel concreto em Lisboa, Porto ou Cascais, consulte também os projetos desenvolvidos em <a href="/portfolio">portefólio</a>.',
     },
     {
       type: 'callout',

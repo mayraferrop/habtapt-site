@@ -426,3 +426,20 @@
   transform: rotate(180deg);
 }
 
+/* Inline links in blog article prose */
+.insight-prose a {
+  color: #8f7350;
+  text-decoration: underline;
+  text-decoration-color: rgba(143, 115, 80, 0.35);
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+.insight-prose a:hover {
+  color: #1A3E5C;
+  text-decoration-color: #1A3E5C;
+}
+.insight-prose strong {
+  color: #1A3E5C;
+  font-weight: 600;
+}
+

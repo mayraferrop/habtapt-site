@@ -256,14 +256,14 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
         case 'heading3':
           return <h3 key={index} style={{ fontSize: '1.5rem', fontWeight: designSystem.typography.fontWeight.bold, color: designSystem.colors.brand.primary, marginTop: designSystem.spacing[8], marginBottom: designSystem.spacing[3] }}>{block.content as string}</h3>;
         case 'paragraph':
-          return <p key={index} style={{ fontSize: '1.0625rem', lineHeight: '1.8', color: designSystem.colors.neutral[700], marginBottom: designSystem.spacing[6], textAlign: 'justify' }}>{block.content as string}</p>;
+          return <p key={index} className="insight-prose" style={{ fontSize: '1.0625rem', lineHeight: '1.8', color: designSystem.colors.neutral[700], marginBottom: designSystem.spacing[6], textAlign: 'justify' }} dangerouslySetInnerHTML={{ __html: block.content as string }} />;
         case 'list':
           return (
             <ul key={index} style={{ listStyle: 'none', padding: 0, marginBottom: designSystem.spacing[8] }}>
               {(block.content as string[]).map((item, idx) => (
                 <li key={idx} className="flex items-start gap-3" style={{ marginBottom: designSystem.spacing[3] }}>
                   <CheckCircle size={20} style={{ color: category.color, flexShrink: 0, marginTop: '0.25rem' }} />
-                  <span style={{ fontSize: '1.0625rem', lineHeight: '1.7', color: designSystem.colors.neutral[700] }}>{item}</span>
+                  <span className="insight-prose" style={{ fontSize: '1.0625rem', lineHeight: '1.7', color: designSystem.colors.neutral[700] }} dangerouslySetInnerHTML={{ __html: item }} />
                 </li>
               ))}
             </ul>

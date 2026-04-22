@@ -188,7 +188,7 @@ export const article: InsightArticle = {
     {
       type: 'callout',
       content:
-        'Na HABTA, nenhum projecto é apresentado a parceiros de investimento sem uma análise financeira com três cenários, cronograma detalhado e mapa de riscos. Acreditamos que a transparência metodológica é a base de qualquer relação de confiança com quem nos confia capital — e que um ROI bem calculado é sempre melhor do que um ROI optimista que não se concretiza. Uma primeira análise de viabilidade pode ser pedida via /servicos.',
+        'Na HABTA, nenhum projecto é apresentado a parceiros de investimento sem uma análise financeira com três cenários, cronograma detalhado e mapa de riscos. Acreditamos que a transparência metodológica é a base de qualquer relação de confiança com quem nos confia capital — e que um ROI bem calculado é sempre melhor do que um ROI optimista que não se concretiza. Uma primeira análise de viabilidade pode ser pedida via <a href="/servicos">serviços</a>. Para contexto complementar leia o <a href="/blog/investir-em-imoveis-em-portugal-guia-completo-2026">guia completo de investimento</a> e o <a href="/blog/cinco-pilares-avaliar-reabilitacao-urbana">método dos cinco pilares</a>.',
     },
   ],
   faq: [

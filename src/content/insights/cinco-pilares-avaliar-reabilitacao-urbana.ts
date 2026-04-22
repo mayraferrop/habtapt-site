@@ -182,7 +182,7 @@ export const article: InsightArticle = {
     {
       type: 'paragraph',
       content:
-        'Se está a avaliar um projeto de reabilitação em Portugal e quer validar estes cinco pilares num caso concreto, a nossa equipa está disponível para uma análise inicial via /portfolio ou /servicos. Pode também subscrever a nossa newsletter para receber análises futuras sobre o mercado e oportunidades selecionadas.',
+        'Se está a avaliar um projeto de reabilitação em Portugal e quer validar estes cinco pilares num caso concreto, a nossa equipa está disponível para uma análise inicial via <a href="/portfolio">portefólio</a> ou <a href="/servicos">serviços</a>. Para aprofundar, veja também o <a href="/blog/reabilitacao-urbana-em-portugal-guia-completo-2026">guia completo de reabilitação urbana em Portugal 2026</a> e <a href="/blog/investir-em-imoveis-em-portugal-guia-completo-2026">como investir em imóveis em Portugal</a>. Pode também subscrever a newsletter para análises futuras.',
     },
   ],
   faq: [
