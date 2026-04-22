@@ -103,13 +103,6 @@ export default function RootLayout({
     <html lang="pt-PT" className={inter.variable}>
       <head>
         <meta name="theme-color" content="#1A3E5C" />
-        <link
-          rel="preload"
-          as="image"
-          imageSrcSet="/images/hero/hero-480.avif 480w, /images/hero/hero-768.avif 768w, /images/hero/hero-1080.avif 1080w, /images/hero/hero-1600.avif 1600w"
-          imageSizes="100vw"
-          fetchPriority="high"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationJsonLd, websiteJsonLd]) }}

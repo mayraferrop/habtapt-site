@@ -15,7 +15,13 @@ export function Hero() {
         paddingTop: '72px',
       }}
     >
-      {/* Background Image — static, no JS needed */}
+      <link
+        rel="preload"
+        as="image"
+        imageSrcSet="/images/hero/hero-480.avif 480w, /images/hero/hero-768.avif 768w, /images/hero/hero-1080.avif 1080w, /images/hero/hero-1600.avif 1600w"
+        imageSizes="100vw"
+        fetchPriority="high"
+      />
       <div className="absolute inset-0" style={{ backgroundColor: '#1A3E5C' }}>
         <img
           src="/images/hero/hero-480.avif"

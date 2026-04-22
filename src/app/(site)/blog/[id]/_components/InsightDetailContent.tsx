@@ -382,7 +382,7 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
 
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.25 }} style={{ marginBottom: designSystem.spacing[12], borderRadius: designSystem.borderRadius['2xl'], overflow: 'hidden', boxShadow: designSystem.shadows.lg }}>
               {insight.image ? (
-                <ImageWithFallback src={insight.image} alt={insight.title} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} />
+                <ImageWithFallback src={insight.image} alt={insight.title} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} loading="eager" fetchPriority="high" />
               ) : (
                 <div
                   role="img"

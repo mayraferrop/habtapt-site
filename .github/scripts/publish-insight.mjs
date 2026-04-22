@@ -316,12 +316,21 @@ if (!VALID_CATEGORIES.includes(chosenCategory)) {
   fail(`Categoria inválida: ${chosenCategory}. Válidas: ${VALID_CATEGORIES.join(', ')}.`);
 }
 const poolImage = pickPoolImage(chosenCategory, slug);
-if (poolImage && !/\bimage\s*:/.test(fileContent)) {
-  fileContent = fileContent.replace(
-    /(excerpt:\s*(?:'[^']*'|"[^"]*"|`[^`]*`)\s*,\s*\n)/,
-    `$1  image: '${poolImage}',\n`,
-  );
-  console.log(`[publish-insight] Imagem atribuída de pool ${chosenCategory}: ${poolImage}`);
+if (poolImage) {
+  const hasImage = /\bimage\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`)/.test(fileContent);
+  if (hasImage) {
+    fileContent = fileContent.replace(
+      /\bimage\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`)/,
+      `image: '${poolImage}'`,
+    );
+    console.log(`[publish-insight] Imagem substituída por pool ${chosenCategory}: ${poolImage}`);
+  } else {
+    fileContent = fileContent.replace(
+      /(excerpt:\s*(?:'[^']*'|"[^"]*"|`[^`]*`)\s*,\s*\n)/,
+      `$1  image: '${poolImage}',\n`,
+    );
+    console.log(`[publish-insight] Imagem injetada de pool ${chosenCategory}: ${poolImage}`);
+  }
 }
 
 fs.writeFileSync(filePath, fileContent, 'utf8');

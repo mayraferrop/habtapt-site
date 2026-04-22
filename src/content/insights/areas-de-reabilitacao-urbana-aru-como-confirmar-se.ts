@@ -19,7 +19,7 @@ export const article: InsightArticle = {
   updated_at: '2026-04-22',
   excerpt:
     'Confirmar se um imóvel está dentro de uma Área de Reabilitação Urbana é o primeiro passo para aceder a IVA de 6% em obras e isenções de IMI e IMT em Portugal.',
-  image: 'https://images.unsplash.com/photo-1721244653652-268631ec049a${UNSPLASH_PARAMS}',
+  image: 'https://images.unsplash.com/photo-1721244653652-268631ec049a?w=1600&q=80&auto=format&fit=crop',
   tags: [
     'área de reabilitação urbana Portugal',
     'ARU Lisboa Porto 2026',
