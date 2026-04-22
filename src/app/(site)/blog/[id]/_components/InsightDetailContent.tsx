@@ -427,7 +427,7 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
 
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.25 }} style={{ marginBottom: designSystem.spacing[12], borderRadius: designSystem.borderRadius['2xl'], overflow: 'hidden', boxShadow: designSystem.shadows.lg }}>
               {insight.image ? (
-                <ImageWithFallback src={insight.image} alt={insight.title} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} loading="eager" fetchPriority="high" />
+                <ImageWithFallback src={insight.image} alt={insight.title} width={1600} height={800} style={{ width: '100%', height: isMobile ? '250px' : '500px', objectFit: 'cover' }} loading="eager" fetchPriority="high" />
               ) : (
                 <div
                   role="img"
@@ -665,7 +665,7 @@ export default function InsightDetailContent({ insight: serverInsight, relatedIn
                     >
                       <div style={{ position: 'relative', overflow: 'hidden', height: '200px' }}>
                         {related.image ? (
-                          <ImageWithFallback src={related.image} alt={related.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} className="group-hover:scale-110" />
+                          <ImageWithFallback src={related.image.replace(/([?&])w=\d+/, '$1w=800')} alt={related.title} width={800} height={400} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} className="group-hover:scale-110" />
                         ) : (
                           <div
                             role="img"

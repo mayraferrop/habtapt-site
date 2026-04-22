@@ -103,6 +103,8 @@ export default function RootLayout({
     <html lang="pt-PT" className={inter.variable}>
       <head>
         <meta name="theme-color" content="#1A3E5C" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationJsonLd, websiteJsonLd]) }}
