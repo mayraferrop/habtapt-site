@@ -10,6 +10,7 @@ import { article as zonasPremiumDeLisboaGuiaInvestimento2026 } from './zonas-pre
 import { article as zonasPremiumDoPortoGuiaInvestimento2026 } from './zonas-premium-do-porto-guia-investimento-2026';
 import { article as certificacaoEnergeticaEmPortugalGuiaCompleto2026 } from './certificacao-energetica-em-portugal-guia-completo-2026';
 import { article as reabilitacaoSustentavelEmPortugalMateriaisSistemas2026 } from './reabilitacao-sustentavel-em-portugal-materiais-sistemas-2026';
+import { article as eficienciaEnergeticaEmImoveisReabilitadosGuia2026 } from './eficiencia-energetica-em-imoveis-reabilitados-guia-2026';
 
 const articles: InsightArticle[] = [
   cincoPilares,
@@ -23,6 +24,7 @@ const articles: InsightArticle[] = [
   zonasPremiumDoPortoGuiaInvestimento2026,
   certificacaoEnergeticaEmPortugalGuiaCompleto2026,
   reabilitacaoSustentavelEmPortugalMateriaisSistemas2026,
+  eficienciaEnergeticaEmImoveisReabilitadosGuia2026,
 ];
 
 export function getAllInsights(): InsightArticle[] {
