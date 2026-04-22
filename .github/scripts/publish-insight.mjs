@@ -131,9 +131,9 @@ function pickTopicForCategory(targetCategory, usedSlugs) {
 async function publishOne(chosen) {
   const topic = chosen.topic;
   const suggestedCategory = chosen.suggestedCategory;
-  const slug = slugify(topic);
-  const camelName = toCamelCase(slug);
-  const filePath = path.join(CONTENT_DIR, `${slug}.ts`);
+  let slug = slugify(topic);
+  let camelName = toCamelCase(slug);
+  let filePath = path.join(CONTENT_DIR, `${slug}.ts`);
   const today = new Date().toISOString().slice(0, 10);
   const currentYear = new Date().getFullYear();
   const template = fs.readFileSync(TEMPLATE, 'utf8');
@@ -284,7 +284,7 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
 
 if (!resp.ok) {
   const errText = await resp.text();
-  fail(`Anthropic API ${resp.status}: ${errText}`);
+  throw new Error(`Anthropic API ${resp.status}: ${errText}`);
 }
 
 const data = await resp.json();
@@ -293,16 +293,32 @@ const fileMatch = text.match(/<file>([\s\S]*?)<\/file>/);
 if (!fileMatch) {
   console.error('Resposta da API (sem <file> tags):');
   console.error(text.slice(0, 2000));
-  fail('Resposta não continha <file>...</file>.');
+  throw new Error('Resposta não continha <file>...</file>.');
 }
 
 let fileContent = fileMatch[1].trim() + '\n';
+
+// Se o modelo gerou id: '...' diferente do slug calculado, alinhar slug/caminho ao id real.
+const idMatch = fileContent.match(/id:\s*'([^']+)'/);
+if (!idMatch) throw new Error("Conteúdo gerado não tem id: '...'.");
+const generatedId = idMatch[1];
+if (generatedId !== slug) {
+  console.warn(
+    `[publish-insight] id gerado "${generatedId}" difere do slug calculado "${slug}". A usar id gerado.`,
+  );
+  slug = generatedId;
+  camelName = toCamelCase(slug);
+  filePath = path.join(CONTENT_DIR, `${slug}.ts`);
+  if (fs.existsSync(filePath)) {
+    console.warn(`::warning::Ficheiro já existe para id "${slug}". A saltar.`);
+    return null;
+  }
+}
 
 const mustContain = [
   'import',
   './_categories',
   './types',
-  `id: '${slug}'`,
   'contentBlocks',
   'InsightArticle',
   'tldr',
@@ -311,14 +327,14 @@ const mustContain = [
   'disclaimer',
 ];
 for (const needle of mustContain) {
-  if (!fileContent.includes(needle)) fail(`Conteúdo gerado não inclui "${needle}".`);
+  if (!fileContent.includes(needle)) throw new Error(`Conteúdo gerado não inclui "${needle}".`);
 }
 
 const categoryMatch = fileContent.match(/category:\s*'([^']+)'/);
-if (!categoryMatch) fail('Conteúdo gerado não tem category: \'...\'.');
+if (!categoryMatch) throw new Error("Conteúdo gerado não tem category: '...'.");
 const chosenCategory = categoryMatch[1];
 if (!VALID_CATEGORIES.includes(chosenCategory)) {
-  fail(`Categoria inválida: ${chosenCategory}. Válidas: ${VALID_CATEGORIES.join(', ')}.`);
+  throw new Error(`Categoria inválida: ${chosenCategory}. Válidas: ${VALID_CATEGORIES.join(', ')}.`);
 }
 const poolImage = pickPoolImage(chosenCategory, slug);
 if (poolImage) {
@@ -338,15 +354,13 @@ if (poolImage) {
   }
 }
 
-fs.writeFileSync(filePath, fileContent, 'utf8');
-console.log(`[publish-insight] Escrito: ${filePath}`);
-
+// Computar todas as alterações em memória antes de escrever em disco.
 const allTsLines = fs.readFileSync(ALL_TS, 'utf8').split('\n');
 let lastArticleImportIdx = -1;
 for (let i = 0; i < allTsLines.length; i++) {
   if (allTsLines[i].startsWith('import { article as ')) lastArticleImportIdx = i;
 }
-if (lastArticleImportIdx === -1) fail('Não encontrei linha de import article as ... em _all.ts');
+if (lastArticleImportIdx === -1) throw new Error('Não encontrei linha de import article as ... em _all.ts');
 
 const newImportLine = `import { article as ${camelName} } from './${slug}';`;
 allTsLines.splice(lastArticleImportIdx + 1, 0, newImportLine);
@@ -363,12 +377,19 @@ const updatedAllTs = allTsWithImport.replace(
     return `const articles: InsightArticle[] = [${entries.join(', ')}];`;
   },
 );
-if (updatedAllTs === allTsWithImport) fail('Não consegui atualizar o array articles em _all.ts');
-fs.writeFileSync(ALL_TS, updatedAllTs, 'utf8');
-console.log('[publish-insight] _all.ts atualizado.');
+if (updatedAllTs === allTsWithImport) throw new Error('Não consegui atualizar o array articles em _all.ts');
 
 const currentBacklog = fs.readFileSync(BACKLOG, 'utf8');
 const updatedBacklog = currentBacklog.replace(`- [ ] ${topic}`, `- [x] ${topic}`);
+if (updatedBacklog === currentBacklog) {
+  console.warn(`::warning::Não encontrei "- [ ] ${topic}" no backlog para marcar — provavelmente já publicado.`);
+}
+
+// Tudo validado — escrever ao disco em bloco.
+fs.writeFileSync(filePath, fileContent, 'utf8');
+console.log(`[publish-insight] Escrito: ${filePath}`);
+fs.writeFileSync(ALL_TS, updatedAllTs, 'utf8');
+console.log('[publish-insight] _all.ts atualizado.');
 fs.writeFileSync(BACKLOG, updatedBacklog, 'utf8');
 console.log('[publish-insight] Backlog marcado como publicado.');
 
