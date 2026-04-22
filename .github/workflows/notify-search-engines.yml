@@ -1,0 +1,41 @@
+name: Notify search engines
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'URLs separados por vírgula (vazio = auto-discover de todos os insights + páginas estáticas)'
+        required: false
+        default: ''
+
+concurrency:
+  group: notify-search-engines
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Aguardar propagação Cloudflare (60s)
+        run: sleep 60
+
+      - name: Notify
+        env:
+          GOOGLE_INDEXING_SA_KEY: ${{ secrets.GOOGLE_INDEXING_SA_KEY }}
+          URLS: ${{ inputs.urls }}
+        run: node .github/scripts/notify-search-engines.mjs
