@@ -21,7 +21,7 @@ Marcar com `[x]` depois de publicado.
 - [ ] Elevadores em edifícios antigos: viabilidade e custos
 
 ## Regulamentação
-- [ ] Áreas de Reabilitação Urbana (ARU): como confirmar se o imóvel está incluído
+- [x] Áreas de Reabilitação Urbana (ARU): como confirmar se o imóvel está incluído
 - [ ] Regime jurídico do arrendamento urbano: o que mudou e como afeta investidores
 - [ ] IMI e IMT em reabilitação: isenções e armadilhas
 - [ ] Alojamento local em 2026: estado da arte por município

@@ -1,8 +1,9 @@
 import type { InsightArticle } from './types';
 import { article as cincoPilares } from './cinco-pilares-avaliar-reabilitacao-urbana';
 import { article as comoCalcularORoiRealDeUmProjeto } from './como-calcular-o-roi-real-de-um-projeto';
+import { article as areasDeReabilitacaoUrbanaAruComoConfirmarSe } from './areas-de-reabilitacao-urbana-aru-como-confirmar-se';
 
-const articles: InsightArticle[] = [cincoPilares, comoCalcularORoiRealDeUmProjeto];
+const articles: InsightArticle[] = [cincoPilares, comoCalcularORoiRealDeUmProjeto, areasDeReabilitacaoUrbanaAruComoConfirmarSe];
 
 export function getAllInsights(): InsightArticle[] {
   return [...articles].sort((a, b) => {
