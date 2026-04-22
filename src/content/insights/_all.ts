@@ -6,6 +6,7 @@ import { article as investirEmImoveisEmPortugalGuiaCompleto2026 } from './invest
 import { article as reabilitacaoUrbanaEmPortugalGuiaCompleto2026 } from './reabilitacao-urbana-em-portugal-guia-completo-2026';
 import { article as mercadoImobiliarioPortugal2026AnaliseCompleta } from './mercado-imobiliario-portugal-2026-analise-completa';
 import { article as fiscalidadeImobiliariaEmPortugalGuiaCompleto2026 } from './fiscalidade-imobiliaria-em-portugal-guia-completo-2026';
+import { article as zonasPremiumDeLisboaGuiaInvestimento2026 } from './zonas-premium-de-lisboa-guia-investimento-2026';
 
 const articles: InsightArticle[] = [
   cincoPilares,
@@ -15,6 +16,7 @@ const articles: InsightArticle[] = [
   reabilitacaoUrbanaEmPortugalGuiaCompleto2026,
   mercadoImobiliarioPortugal2026AnaliseCompleta,
   fiscalidadeImobiliariaEmPortugalGuiaCompleto2026,
+  zonasPremiumDeLisboaGuiaInvestimento2026,
 ];
 
 export function getAllInsights(): InsightArticle[] {
