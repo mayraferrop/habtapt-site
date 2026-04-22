@@ -68,6 +68,10 @@ export const organizationJsonLd = {
     opens: '09:00',
     closes: '18:00',
   },
+  publishingPrinciples: 'https://habta.eu/metodologia',
+  actionableFeedbackPolicy: 'https://habta.eu/metodologia',
+  correctionsPolicy: 'https://habta.eu/metodologia',
+  ethicsPolicy: 'https://habta.eu/metodologia',
 };
 
 export const websiteJsonLd = {

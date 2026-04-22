@@ -18,6 +18,7 @@ const links = {
   recursos: [
     { label: 'Insights', href: '/blog' },
     { label: 'Depoimentos', href: '/depoimentos' },
+    { label: 'Metodologia Editorial', href: '/metodologia' },
   ],
   legal: [
     { label: 'Política de Privacidade', href: '/privacidade' },
