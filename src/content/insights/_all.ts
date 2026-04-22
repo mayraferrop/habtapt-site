@@ -2,8 +2,18 @@ import type { InsightArticle } from './types';
 import { article as cincoPilares } from './cinco-pilares-avaliar-reabilitacao-urbana';
 import { article as comoCalcularORoiRealDeUmProjeto } from './como-calcular-o-roi-real-de-um-projeto';
 import { article as areasDeReabilitacaoUrbanaAruComoConfirmarSe } from './areas-de-reabilitacao-urbana-aru-como-confirmar-se';
+import { article as investirEmImoveisEmPortugalGuiaCompleto2026 } from './investir-em-imoveis-em-portugal-guia-completo-2026';
+import { article as reabilitacaoUrbanaEmPortugalGuiaCompleto2026 } from './reabilitacao-urbana-em-portugal-guia-completo-2026';
+import { article as mercadoImobiliarioPortugal2026AnaliseCompleta } from './mercado-imobiliario-portugal-2026-analise-completa';
 
-const articles: InsightArticle[] = [cincoPilares, comoCalcularORoiRealDeUmProjeto, areasDeReabilitacaoUrbanaAruComoConfirmarSe];
+const articles: InsightArticle[] = [
+  cincoPilares,
+  comoCalcularORoiRealDeUmProjeto,
+  areasDeReabilitacaoUrbanaAruComoConfirmarSe,
+  investirEmImoveisEmPortugalGuiaCompleto2026,
+  reabilitacaoUrbanaEmPortugalGuiaCompleto2026,
+  mercadoImobiliarioPortugal2026AnaliseCompleta,
+];
 
 export function getAllInsights(): InsightArticle[] {
   return [...articles].sort((a, b) => {
