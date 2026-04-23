@@ -106,7 +106,18 @@ export function Contact({ headingLevel = 2 }: ContactProps = {}) {
 
       const { toast } = await import('sonner');
       toast.success(result.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
-      
+
+      if (typeof window !== 'undefined') {
+        const w = window as unknown as { dataLayer?: Record<string, unknown>[] };
+        w.dataLayer = w.dataLayer || [];
+        w.dataLayer.push({
+          event: 'generate_lead',
+          lead_type: formData.interest || 'nao_especificado',
+          page_location: window.location.href,
+          page_path: window.location.pathname,
+        });
+      }
+
       setFormData({
         name: '',
         email: '',
