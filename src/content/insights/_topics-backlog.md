@@ -7,7 +7,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Cinco pilares para avaliar um projeto de reabilitação urbana antes de investir
 - [x] Como calcular o ROI real de um projeto de reabilitação em Lisboa
 - [x] Yield bruto vs yield líquido: o que os investidores confundem em Portugal
-- [ ] Financiamento hipotecário para reabilitação em Portugal — o que os bancos olham
+- [x] Financiamento hipotecário para reabilitação em Portugal — o que os bancos olham
 - [ ] Quando faz sentido investir em reabilitação via sociedade vs nome próprio
 - [ ] Os três cenários fiscais mais comuns em reabilitação urbana
 - [ ] Como funciona a partilha de capital em clubes de investidores imobiliários
@@ -35,7 +35,7 @@ Marcar com `[x]` depois de publicado.
 ## Regulamentação
 - [x] Áreas de Reabilitação Urbana (ARU): como confirmar se o imóvel está incluído
 - [x] Regime jurídico do arrendamento urbano: o que mudou e como afeta investidores
-- [ ] IMI e IMT em reabilitação: isenções e armadilhas
+- [x] IMI e IMT em reabilitação: isenções e armadilhas
 - [ ] Alojamento local em 2026: estado da arte por município
 - [ ] Propriedade horizontal: transformar um edifício em frações
 - [ ] Licenciamento simplificado vs obras de conservação: diferenças práticas
@@ -52,7 +52,7 @@ Marcar com `[x]` depois de publicado.
 
 ## Mercado
 - [x] Preços médios por m² nas freguesias centrais de Lisboa — leitura crítica
-- [ ] O mapa do investimento: que cidades portuguesas crescem e porquê
+- [x] O mapa do investimento: que cidades portuguesas crescem e porquê
 - [ ] Fatores de risco no mercado imobiliário português em 2026
 - [ ] Compradores estrangeiros: perfis e impacto nos preços
 - [ ] Yield comparado: Portugal vs Espanha, Itália e Grécia
@@ -70,7 +70,7 @@ Marcar com `[x]` depois de publicado.
 
 ## Sustentabilidade
 - [x] Certificação energética: passos concretos para passar de D para B
-- [ ] Materiais reciclados em reabilitação: o que realmente vale a pena
+- [x] Materiais reciclados em reabilitação: o que realmente vale a pena
 - [ ] Gestão de resíduos de obra: enquadramento legal e custo
 - [ ] Isolamento térmico em edifícios pombalinos: limitações e soluções
 - [ ] Painéis solares em edifícios classificados: o que é permitido
