@@ -9,7 +9,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Yield bruto vs yield líquido: o que os investidores confundem em Portugal
 - [x] Financiamento hipotecário para reabilitação em Portugal — o que os bancos olham
 - [x] Quando faz sentido investir em reabilitação via sociedade vs nome próprio
-- [ ] Os três cenários fiscais mais comuns em reabilitação urbana
+- [x] Os três cenários fiscais mais comuns em reabilitação urbana
 - [ ] Como funciona a partilha de capital em clubes de investidores imobiliários
 - [ ] Cap rate em reabilitação Lisboa 2026: benchmarks por freguesia
 - [ ] IRS categoria F vs actividade empresarial: quando migrar para NIF independente
@@ -36,7 +36,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Áreas de Reabilitação Urbana (ARU): como confirmar se o imóvel está incluído
 - [x] Regime jurídico do arrendamento urbano: o que mudou e como afeta investidores
 - [x] IMI e IMT em reabilitação: isenções e armadilhas
-- [ ] Alojamento local em 2026: estado da arte por município
+- [x] Alojamento local em 2026: estado da arte por município
 - [ ] Propriedade horizontal: transformar um edifício em frações
 - [ ] Licenciamento simplificado vs obras de conservação: diferenças práticas
 - [ ] Mais Habitação 2023 e revogações 2025: o que está em vigor em 2026
@@ -54,7 +54,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Preços médios por m² nas freguesias centrais de Lisboa — leitura crítica
 - [x] O mapa do investimento: que cidades portuguesas crescem e porquê
 - [x] Fatores de risco no mercado imobiliário português em 2026
-- [ ] Compradores estrangeiros: perfis e impacto nos preços
+- [x] Compradores estrangeiros: perfis e impacto nos preços
 - [ ] Yield comparado: Portugal vs Espanha, Itália e Grécia
 - [ ] Reabilitação de segunda residência: quando a macro-localização ganha peso
 - [ ] Mercado imobiliário Lisboa Q1 2026: preços, rendas, tempo médio de venda
@@ -72,7 +72,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Certificação energética: passos concretos para passar de D para B
 - [x] Materiais reciclados em reabilitação: o que realmente vale a pena
 - [x] Gestão de resíduos de obra: enquadramento legal e custo
-- [ ] Isolamento térmico em edifícios pombalinos: limitações e soluções
+- [x] Isolamento térmico em edifícios pombalinos: limitações e soluções
 - [ ] Painéis solares em edifícios classificados: o que é permitido
 - [ ] Bombas de calor em reabilitação: custos, retorno e fornecedores Portugal
 - [ ] Isolamento térmico exterior ETICS em edifícios antigos portugueses
