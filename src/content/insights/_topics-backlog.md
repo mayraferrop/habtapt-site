@@ -12,7 +12,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Os três cenários fiscais mais comuns em reabilitação urbana
 - [x] Como funciona a partilha de capital em clubes de investidores imobiliários
 - [x] Cap rate em reabilitação Lisboa 2026: benchmarks por freguesia
-- [ ] IRS categoria F vs actividade empresarial: quando migrar para NIF independente
+- [x] IRS categoria F vs actividade empresarial: quando migrar para NIF independente
 - [ ] Alavancagem 70/30 vs 80/20: simulações para imóveis Lisboa 2026
 - [ ] Diversificação geográfica Lisboa Porto Setúbal: mix para 500k–1M
 - [ ] Golden Visa 2026 em reabilitação: o que mudou e viabilidade actual
@@ -39,7 +39,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Alojamento local em 2026: estado da arte por município
 - [x] Propriedade horizontal: transformar um edifício em frações
 - [x] Licenciamento simplificado vs obras de conservação: diferenças práticas
-- [ ] Mais Habitação 2023 e revogações 2025: o que está em vigor em 2026
+- [x] Mais Habitação 2023 e revogações 2025: o que está em vigor em 2026
 - [ ] RNH 2.0 em 2026: quem ainda beneficia e quem não
 - [ ] Registo Predial pré-compra: o que verificar antes de reabilitar
 - [ ] Licença de utilização após reabilitação: processo e prazos
@@ -57,7 +57,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Compradores estrangeiros: perfis e impacto nos preços
 - [x] Yield comparado: Portugal vs Espanha, Itália e Grécia
 - [x] Reabilitação de segunda residência: quando a macro-localização ganha peso
-- [ ] Mercado imobiliário Lisboa Q1 2026: preços, rendas, tempo médio de venda
+- [x] Mercado imobiliário Lisboa Q1 2026: preços, rendas, tempo médio de venda
 - [ ] Mercado Porto 2026: os dez bairros com maior valorização
 - [ ] Yields arrendamento longa duração vs alojamento local Lisboa 2026
 - [ ] Cascais 2026: análise de mercado residencial premium
@@ -75,7 +75,7 @@ Marcar com `[x]` depois de publicado.
 - [x] Isolamento térmico em edifícios pombalinos: limitações e soluções
 - [x] Painéis solares em edifícios classificados: o que é permitido
 - [x] Bombas de calor em reabilitação: custos, retorno e fornecedores Portugal
-- [ ] Isolamento térmico exterior ETICS em edifícios antigos portugueses
+- [x] Isolamento térmico exterior ETICS em edifícios antigos portugueses
 - [ ] Solar fotovoltaico residencial 2026: autoconsumo e venda à rede
 - [ ] Ventilação mecânica controlada em edifícios antigos: porquê e como
 - [ ] Certificação LEED vs BREEAM vs nZEB em Portugal 2026
